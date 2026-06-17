@@ -17,6 +17,7 @@ import rechargeRoutes from './routes/recharge.js'
 import pointsRoutes from './routes/points.js'
 import statisticsRoutes from './routes/statistics.js'
 import configRoutes from './routes/config.js'
+import couponRoutes from './routes/coupons.js'
 
 // for esm mode
 const __filename = fileURLToPath(import.meta.url)
@@ -40,6 +41,7 @@ app.use('/api/recharge', rechargeRoutes)
 app.use('/api/points', pointsRoutes)
 app.use('/api/statistics', statisticsRoutes)
 app.use('/api/config', configRoutes)
+app.use('/api/coupons', couponRoutes)
 
 /**
  * health

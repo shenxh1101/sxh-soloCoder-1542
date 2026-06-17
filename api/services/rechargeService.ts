@@ -48,3 +48,7 @@ export function createRecharge(
 export function getBonusForAmount(amount: number, rules: RechargeRule[]): number {
   return calculateBonusAmount(amount, rules);
 }
+
+export function writeRechargeRecords(records: RechargeRecord[]): void {
+  writeJSONFile('rechargeRecords.json', records);
+}

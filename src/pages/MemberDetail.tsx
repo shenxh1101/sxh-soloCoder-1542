@@ -10,10 +10,14 @@ import {
   CreditCard,
   TrendingUp,
   History,
+  Ticket,
+  CheckCircle,
+  XCircle,
+  Clock3,
 } from 'lucide-react';
 import { memberApi } from '../api/client.js';
 import { formatCurrency, formatDate, formatDateTime, formatPhone, getAge } from '../utils/format.js';
-import type { ConsumeRecord, RechargeRecord, PointsExchange } from '../../shared/types/index.js';
+import type { ConsumeRecord, RechargeRecord, PointsExchange, Coupon } from '../../shared/types/index.js';
 
 export default function MemberDetail() {
   const { id } = useParams<{ id: string }>();
@@ -23,8 +27,9 @@ export default function MemberDetail() {
     consumeRecords: ConsumeRecord[];
     rechargeRecords: RechargeRecord[];
     pointsRecords: PointsExchange[];
+    coupons: Coupon[];
   } | null>(null);
-  const [activeTab, setActiveTab] = useState<'consume' | 'recharge' | 'points'>('consume');
+  const [activeTab, setActiveTab] = useState<'consume' | 'recharge' | 'points' | 'coupons'>('consume');
 
   useEffect(() => {
     if (id) {
@@ -63,7 +68,7 @@ export default function MemberDetail() {
     );
   }
 
-  const { member, consumeRecords, rechargeRecords, pointsRecords } = memberData;
+  const { member, consumeRecords, rechargeRecords, pointsRecords, coupons } = memberData;
   const totalConsume = consumeRecords.reduce((sum, r) => sum + r.amount, 0);
   const totalRecharge = rechargeRecords.reduce((sum, r) => sum + r.rechargeAmount, 0);
   const totalBonus = rechargeRecords.reduce((sum, r) => sum + r.bonusAmount, 0);
@@ -72,7 +77,39 @@ export default function MemberDetail() {
     { key: 'consume', label: '消费记录', count: consumeRecords.length, icon: CreditCard },
     { key: 'recharge', label: '充值记录', count: rechargeRecords.length, icon: TrendingUp },
     { key: 'points', label: '积分记录', count: pointsRecords.length, icon: History },
+    { key: 'coupons', label: '优惠券', count: coupons.length, icon: Ticket },
   ];
+
+  const unusedCoupons = coupons.filter(c => c.status === 'unused');
+  const usedCoupons = coupons.filter(c => c.status === 'used');
+  const expiredCoupons = coupons.filter(c => c.status === 'expired');
+
+  const getCouponStatusIcon = (status: string) => {
+    switch (status) {
+      case 'unused': return <Clock3 size={14} className="text-blue-500" />;
+      case 'used': return <CheckCircle size={14} className="text-green-500" />;
+      case 'expired': return <XCircle size={14} className="text-gray-400" />;
+      default: return null;
+    }
+  };
+
+  const getCouponStatusText = (status: string) => {
+    switch (status) {
+      case 'unused': return '未使用';
+      case 'used': return '已使用';
+      case 'expired': return '已过期';
+      default: return status;
+    }
+  };
+
+  const getCouponStatusClass = (status: string) => {
+    switch (status) {
+      case 'unused': return 'bg-blue-50 text-blue-700 border-blue-200';
+      case 'used': return 'bg-green-50 text-green-700 border-green-200';
+      case 'expired': return 'bg-gray-50 text-gray-500 border-gray-200';
+      default: return 'bg-gray-50 text-gray-500';
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -270,6 +307,125 @@ export default function MemberDetail() {
                 <div className="text-center py-12 text-primary-400">
                   <History size={40} className="mx-auto mb-2 opacity-50" />
                   <p>暂无积分记录</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'coupons' && (
+            <div className="space-y-6">
+              {unusedCoupons.length > 0 && (
+                <div>
+                  <h4 className="font-semibold text-primary-800 mb-3 flex items-center gap-2">
+                    <Clock3 size={16} className="text-blue-500" />
+                    未使用 ({unusedCoupons.length})
+                  </h4>
+                  <div className="space-y-3">
+                    {unusedCoupons.map((coupon) => (
+                      <div
+                        key={coupon.id}
+                        className="flex items-center justify-between p-4 bg-blue-50/50 rounded-xl border-2 border-blue-100"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
+                            <Ticket size={18} />
+                          </div>
+                          <div>
+                            <p className="font-medium text-primary-800">{coupon.name}</p>
+                            <p className="text-sm text-primary-500">
+                              有效期: {coupon.validFrom} 至 {coupon.validTo}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-accent-600">{formatCurrency(coupon.amount)}</p>
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border ${getCouponStatusClass(coupon.status)}`}>
+                            {getCouponStatusIcon(coupon.status)}
+                            {getCouponStatusText(coupon.status)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {usedCoupons.length > 0 && (
+                <div>
+                  <h4 className="font-semibold text-primary-800 mb-3 flex items-center gap-2">
+                    <CheckCircle size={16} className="text-green-500" />
+                    已使用 ({usedCoupons.length})
+                  </h4>
+                  <div className="space-y-3">
+                    {usedCoupons.map((coupon) => (
+                      <div
+                        key={coupon.id}
+                        className="flex items-center justify-between p-4 bg-green-50/30 rounded-xl border-2 border-green-100 opacity-75"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center text-green-600">
+                            <Ticket size={18} />
+                          </div>
+                          <div>
+                            <p className="font-medium text-primary-800">{coupon.name}</p>
+                            <p className="text-sm text-primary-500">
+                              使用时间: {coupon.usedAt ? formatDateTime(coupon.usedAt) : '-'}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-gray-500 line-through">{formatCurrency(coupon.amount)}</p>
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border ${getCouponStatusClass(coupon.status)}`}>
+                            {getCouponStatusIcon(coupon.status)}
+                            {getCouponStatusText(coupon.status)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {expiredCoupons.length > 0 && (
+                <div>
+                  <h4 className="font-semibold text-primary-800 mb-3 flex items-center gap-2">
+                    <XCircle size={16} className="text-gray-400" />
+                    已过期 ({expiredCoupons.length})
+                  </h4>
+                  <div className="space-y-3">
+                    {expiredCoupons.map((coupon) => (
+                      <div
+                        key={coupon.id}
+                        className="flex items-center justify-between p-4 bg-gray-50/30 rounded-xl border-2 border-gray-100 opacity-60"
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500">
+                            <Ticket size={18} />
+                          </div>
+                          <div>
+                            <p className="font-medium text-primary-800">{coupon.name}</p>
+                            <p className="text-sm text-primary-500">
+                              有效期至: {coupon.validTo}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-bold text-gray-400 line-through">{formatCurrency(coupon.amount)}</p>
+                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs border ${getCouponStatusClass(coupon.status)}`}>
+                            {getCouponStatusIcon(coupon.status)}
+                            {getCouponStatusText(coupon.status)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {coupons.length === 0 && (
+                <div className="text-center py-12 text-primary-400">
+                  <Ticket size={40} className="mx-auto mb-2 opacity-50" />
+                  <p>暂无优惠券记录</p>
                 </div>
               )}
             </div>

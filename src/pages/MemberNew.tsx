@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ArrowLeft, Save, UserPlus } from 'lucide-react';
+import { ArrowLeft, Save, UserPlus, CheckCircle } from 'lucide-react';
 import { useAppStore } from '../store/index.js';
 import Toast from '../components/Toast.js';
 import { formatCurrency } from '../utils/format.js';
@@ -17,6 +17,17 @@ export default function MemberNew() {
   });
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [showRecharge, setShowRecharge] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [createdResult, setCreatedResult] = useState<{
+    memberName: string;
+    rechargeAmount: number;
+    bonusAmount: number;
+    totalBalance: number;
+  } | null>(null);
+
+  useEffect(() => {
+    fetchConfig();
+  }, [fetchConfig]);
 
   const calculateBonus = (amount: number, rules: RechargeRule[]): number => {
     let bonus = 0;
@@ -28,7 +39,7 @@ export default function MemberNew() {
     return bonus;
   };
 
-  const rechargeAmount = formData.balance;
+  const rechargeAmount = showRecharge ? formData.balance : 0;
   const bonusAmount = calculateBonus(rechargeAmount, rechargeRules);
   const totalBalance = rechargeAmount + bonusAmount;
 
@@ -45,22 +56,79 @@ export default function MemberNew() {
     }
 
     try {
-      await addMember({
+      const result = await addMember({
         name: formData.name,
         phone: formData.phone,
         birthday: formData.birthday,
-        balance: totalBalance,
+        balance: 0,
         points: 0,
+        rechargeAmount: rechargeAmount,
       });
+      
+      setCreatedResult({
+        memberName: result.member.name,
+        rechargeAmount: result.rechargeRecord?.rechargeAmount || 0,
+        bonusAmount: result.rechargeRecord?.bonusAmount || 0,
+        totalBalance: result.member.balance,
+      });
+      
+      setShowSuccess(true);
       setToast({ message: '会员创建成功', type: 'success' });
-      setTimeout(() => navigate('/members'), 1500);
+      
+      setTimeout(() => navigate('/members'), 3000);
     } catch (err) {
       console.error('Failed to add member:', err);
     }
   };
 
+  if (showSuccess && createdResult) {
+    return (
+      <div className="flex items-center justify-center min-h-[70vh]">
+        <div className="text-center animate-fadeIn max-w-md mx-auto">
+          <div className="w-24 h-24 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
+            <CheckCircle size={48} className="text-green-600" />
+          </div>
+          <h2 className="font-serif text-2xl font-bold text-primary-800 mb-2">会员创建成功</h2>
+          <p className="text-primary-500 mb-6">
+            恭喜 {createdResult.memberName} 成为会员
+          </p>
+          
+          {createdResult.rechargeAmount > 0 && (
+            <div className="card text-left mb-6">
+              <h3 className="font-semibold text-primary-800 mb-4">充值详情</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-primary-600">充值金额</span>
+                  <span className="font-semibold text-primary-800">
+                    {formatCurrency(createdResult.rechargeAmount)}
+                  </span>
+                </div>
+                {createdResult.bonusAmount > 0 && (
+                  <div className="flex justify-between text-accent-600">
+                    <span>赠送金额</span>
+                    <span className="font-semibold">+ {formatCurrency(createdResult.bonusAmount)}</span>
+                  </div>
+                )}
+                <div className="border-t border-primary-100 pt-3 mt-3 flex justify-between">
+                  <span className="text-primary-700 font-medium">实际到账余额</span>
+                  <span className="text-xl font-bold text-primary-800">
+                    {formatCurrency(createdResult.totalBalance)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+          
+          <p className="text-sm text-primary-400">
+            即将跳转到会员列表...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fadeIn">
       <div className="flex items-center gap-4">
         <Link to="/members" className="btn-ghost flex items-center gap-2">
           <ArrowLeft size={20} />

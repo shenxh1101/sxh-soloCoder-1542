@@ -1,6 +1,7 @@
 import { readJSONFile, writeJSONFile, generateId } from '../utils/file.js';
-import { formatDate, getDaysUntilBirthday } from '../utils/format.js';
-import type { Member } from '../../shared/types/index.js';
+import { formatDate, getDaysUntilBirthday, calculateBonusAmount } from '../utils/format.js';
+import type { Member, RechargeRule, RechargeRecord } from '../../shared/types/index.js';
+import { getRechargeRecords, writeRechargeRecords } from './rechargeService.js';
 
 export function getMembers(): Member[] {
   return readJSONFile<Member[]>('members.json');
@@ -21,17 +22,49 @@ export function searchMembers(keyword: string): Member[] {
   );
 }
 
-export function addMember(data: Omit<Member, 'id' | 'createdAt' | 'lastVisitAt'>): Member {
+export function addMember(
+  data: Omit<Member, 'id' | 'createdAt' | 'lastVisitAt'>,
+  rechargeAmount: number = 0,
+  rechargeRules: RechargeRule[] = []
+): { member: Member; rechargeRecord?: RechargeRecord } {
   const members = getMembers();
+  
+  let bonusAmount = 0;
+  let totalBalance = data.balance;
+  let rechargeRecord: RechargeRecord | undefined;
+
+  if (rechargeAmount > 0) {
+    bonusAmount = calculateBonusAmount(rechargeAmount, rechargeRules);
+    totalBalance = rechargeAmount + bonusAmount;
+
+    rechargeRecord = {
+      id: generateId('r'),
+      memberId: '',
+      rechargeAmount,
+      bonusAmount,
+      createdAt: new Date().toISOString(),
+    };
+  }
+
   const newMember: Member = {
     ...data,
+    balance: totalBalance,
     id: generateId('m'),
     createdAt: formatDate(new Date()),
     lastVisitAt: null,
   };
+
+  if (rechargeRecord) {
+    rechargeRecord.memberId = newMember.id;
+    const rechargeRecords = getRechargeRecords();
+    rechargeRecords.push(rechargeRecord);
+    writeRechargeRecords(rechargeRecords);
+  }
+
   members.push(newMember);
   writeJSONFile('members.json', members);
-  return newMember;
+  
+  return { member: newMember, rechargeRecord };
 }
 
 export function updateMember(id: string, data: Partial<Member>): Member | undefined {

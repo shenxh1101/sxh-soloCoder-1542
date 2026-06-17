@@ -7,6 +7,11 @@ import {
   Calendar,
   ArrowUpRight,
   ArrowDownRight,
+  Ticket,
+  Gift,
+  BarChart3,
+  CheckCircle,
+  Send,
 } from 'lucide-react';
 import { useAppStore } from '../store/index.js';
 import StatCard from '../components/StatCard.js';
@@ -116,6 +121,95 @@ export default function Statistics() {
           icon={TrendingUp}
           gradient="from-purple-500 to-purple-700"
         />
+      </div>
+
+      <div className="card">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-pink-100 to-pink-600 flex items-center justify-center">
+            <BarChart3 size={20} className="text-white" />
+          </div>
+          <div>
+            <h3 className="font-serif text-xl font-semibold text-primary-800">营销统计</h3>
+            <p className="text-sm text-primary-500">优惠券和积分抵扣情况</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="p-4 bg-gradient-to-br from-pink-50 to-pink-100 rounded-xl border-2 border-pink-200">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-lg bg-pink-500 flex items-center justify-center">
+                <Send size={18} className="text-white" />
+              </div>
+              <div>
+                <p className="text-sm text-pink-600">本月发券</p>
+                <p className="text-2xl font-bold text-pink-700">
+                  {currentStats?.marketing?.couponsIssued || 0} 张
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-pink-500">
+              <Ticket size={12} />
+              生日券 {currentStats?.marketing?.couponsIssued || 0} 张
+            </div>
+          </div>
+
+          <div className="p-4 bg-gradient-to-br from-green-50 to-green-100 rounded-xl border-2 border-green-200">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-lg bg-green-500 flex items-center justify-center">
+                <CheckCircle size={18} className="text-white" />
+              </div>
+              <div>
+                <p className="text-sm text-green-600">本月用券</p>
+                <p className="text-2xl font-bold text-green-700">
+                  {currentStats?.marketing?.couponsUsed || 0} 张
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-green-500">
+              <Ticket size={12} />
+              使用率 {currentStats?.marketing?.couponsIssued 
+                ? Math.round((currentStats.marketing.couponsUsed / currentStats.marketing.couponsIssued) * 100) 
+                : 0}%
+            </div>
+          </div>
+
+          <div className="p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border-2 border-purple-200">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-lg bg-purple-500 flex items-center justify-center">
+                <Gift size={18} className="text-white" />
+              </div>
+              <div>
+                <p className="text-sm text-purple-600">累计抵扣</p>
+                <p className="text-2xl font-bold text-purple-700">
+                  {formatCurrency(currentStats?.marketing?.totalDiscountAmount || 0)}
+                </p>
+              </div>
+            </div>
+            <div className="space-y-1 text-xs text-purple-500">
+              <div className="flex items-center gap-2">
+                <Ticket size={12} />
+                优惠券抵扣 {formatCurrency(currentStats?.marketing?.couponDiscountAmount || 0)}
+              </div>
+              <div className="flex items-center gap-2">
+                <Gift size={12} />
+                积分抵扣 {formatCurrency(currentStats?.marketing?.pointsDiscountAmount || 0)}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {currentStats?.marketing?.couponsExpired > 0 && (
+          <div className="mt-4 p-3 bg-yellow-50 rounded-xl border border-yellow-200 flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-yellow-100 flex items-center justify-center">
+              <Ticket size={16} className="text-yellow-600" />
+            </div>
+            <div>
+              <p className="text-sm text-yellow-700">
+                本月有 <span className="font-semibold">{currentStats.marketing.couponsExpired}</span> 张优惠券已过期未使用
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -1,34 +1,87 @@
 import { useState, useEffect } from 'react';
-import { Search, User, Wallet, CreditCard, Gift, CheckCircle } from 'lucide-react';
+import { Search, User, Wallet, CreditCard, Gift, CheckCircle, Ticket, Minus, Plus } from 'lucide-react';
 import { useAppStore } from '../store/index.js';
 import ServiceCard from '../components/ServiceCard.js';
 import Toast from '../components/Toast.js';
 import { formatCurrency, formatPhone } from '../utils/format.js';
-import type { Member, ServiceItem } from '../../shared/types/index.js';
+import type { Member, ServiceItem, Coupon } from '../../shared/types/index.js';
+import { couponApi } from '../api/client.js';
 
 export default function Checkout() {
   const { members, services, pointsRules, fetchMembers, fetchConfig, consume, loading } = useAppStore();
   const [searchKeyword, setSearchKeyword] = useState('');
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [selectedService, setSelectedService] = useState<ServiceItem | null>(null);
+  const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
+  const [pointsToUse, setPointsToUse] = useState(0);
+  const [memberCoupons, setMemberCoupons] = useState<Coupon[]>([]);
   const [payMethod, setPayMethod] = useState<'balance' | 'cash'>('balance');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [consumeResult, setConsumeResult] = useState<{
+    actualAmount: number;
+    couponUsed?: Coupon;
+    pointsUsed: number;
+    pointsEarned: number;
+  } | null>(null);
 
   useEffect(() => {
     fetchMembers();
     fetchConfig();
   }, [fetchMembers, fetchConfig]);
 
+  useEffect(() => {
+    if (selectedMember) {
+      loadMemberCoupons();
+    } else {
+      setMemberCoupons([]);
+      setSelectedCoupon(null);
+      setPointsToUse(0);
+    }
+  }, [selectedMember]);
+
+  const loadMemberCoupons = async () => {
+    if (!selectedMember) return;
+    try {
+      const res = await couponApi.getUnusedCouponsByMember(selectedMember.id);
+      setMemberCoupons(res.data);
+    } catch (err) {
+      console.error('Failed to load coupons:', err);
+    }
+  };
+
   const filteredMembers = members.filter(m =>
     m.name.includes(searchKeyword) || m.phone.includes(searchKeyword)
   ).slice(0, 5);
 
+  const couponDiscount = selectedCoupon ? selectedCoupon.amount : 0;
+  const pointsDiscount = pointsRules && pointsToUse > 0
+    ? Math.floor(pointsToUse / pointsRules.exchangeRate) * 100
+    : 0;
+  const totalDiscount = couponDiscount + pointsDiscount;
+  const originalAmount = selectedService?.price || 0;
+  const actualAmount = Math.max(0, originalAmount - totalDiscount);
+
   const estimatedPoints = pointsRules && selectedService
-    ? Math.floor(selectedService.price / 100 * pointsRules.pointsPerYuan)
+    ? Math.floor(actualAmount / 100 * pointsRules.pointsPerYuan)
     : 0;
 
-  const canPayWithBalance = selectedMember && selectedMember.balance >= (selectedService?.price || 0);
+  const maxPointsToUse = selectedMember?.points || 0;
+  const minPointsToUse = pointsRules?.minPoints || 100;
+
+  const canPayWithBalance = selectedMember && selectedMember.balance >= actualAmount;
+
+  const handlePointsChange = (delta: number) => {
+    if (!pointsRules) return;
+    const newValue = pointsToUse + delta;
+    if (newValue < 0) return;
+    if (newValue > maxPointsToUse) return;
+    if (newValue > 0 && newValue < minPointsToUse) {
+      setPointsToUse(minPointsToUse);
+    } else {
+      setPointsToUse(newValue);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!selectedMember) {
@@ -43,40 +96,93 @@ export default function Checkout() {
       setToast({ message: '会员余额不足', type: 'error' });
       return;
     }
+    if (pointsToUse > 0 && (!pointsRules || pointsToUse < pointsRules.minPoints)) {
+      setToast({ message: `最低使用 ${pointsRules?.minPoints || 100} 积分`, type: 'error' });
+      return;
+    }
 
     try {
-      await consume({
+      const result = await consume({
         memberId: selectedMember.id,
         serviceName: selectedService.name,
         amount: selectedService.price,
         payMethod,
+        couponId: selectedCoupon?.id,
+        pointsUsed: pointsToUse > 0 ? pointsToUse : undefined,
       });
+      
+      setConsumeResult({
+        actualAmount: result.actualAmount,
+        couponUsed: result.couponUsed,
+        pointsUsed: result.pointsUsed,
+        pointsEarned: result.record.pointsEarned,
+      });
+      
       setShowSuccess(true);
       setToast({ message: '消费成功！', type: 'success' });
       
       setTimeout(() => {
         setShowSuccess(false);
         setSelectedService(null);
+        setSelectedCoupon(null);
+        setPointsToUse(0);
+        setConsumeResult(null);
         fetchMembers();
-      }, 2000);
+        loadMemberCoupons();
+      }, 3000);
     } catch (err) {
       console.error('Failed to consume:', err);
     }
   };
 
-  if (showSuccess) {
+  if (showSuccess && consumeResult) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center animate-bounce">
+        <div className="text-center animate-fadeIn max-w-md mx-auto">
           <div className="w-24 h-24 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
             <CheckCircle size={48} className="text-green-600" />
           </div>
           <h2 className="font-serif text-2xl font-bold text-primary-800 mb-2">消费成功</h2>
-          <p className="text-primary-500">
-            {selectedMember?.name} 消费 {formatCurrency(selectedService?.price || 0)}
+          <p className="text-primary-500 mb-6">
+            {selectedMember?.name} 消费 {formatCurrency(consumeResult.actualAmount)}
           </p>
-          <p className="text-accent-600 mt-1">
-            获得 {estimatedPoints} 积分
+          
+          <div className="card text-left mb-6">
+            <h3 className="font-semibold text-primary-800 mb-4">消费详情</h3>
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-primary-600">原价</span>
+                <span className="font-medium text-primary-800">{formatCurrency(originalAmount)}</span>
+              </div>
+              {consumeResult.couponUsed && (
+                <div className="flex justify-between text-accent-600">
+                  <span>优惠券抵扣</span>
+                  <span className="font-semibold">- {formatCurrency(consumeResult.couponUsed.amount)}</span>
+                </div>
+              )}
+              {consumeResult.pointsUsed > 0 && (
+                <div className="flex justify-between text-purple-600">
+                  <span>积分抵扣 ({consumeResult.pointsUsed}分)</span>
+                  <span className="font-semibold">
+                    - {formatCurrency(Math.floor(consumeResult.pointsUsed / (pointsRules?.exchangeRate || 100)) * 100)}
+                  </span>
+                </div>
+              )}
+              <div className="border-t border-primary-100 pt-3 mt-3 flex justify-between">
+                <span className="text-primary-700 font-medium">实付金额</span>
+                <span className="text-xl font-bold text-primary-800">
+                  {formatCurrency(consumeResult.actualAmount)}
+                </span>
+              </div>
+              <div className="flex justify-between text-accent-600 pt-2">
+                <span>获得积分</span>
+                <span className="font-semibold">+ {consumeResult.pointsEarned} 积分</span>
+              </div>
+            </div>
+          </div>
+          
+          <p className="text-sm text-primary-400">
+            即将返回收银台...
           </p>
         </div>
       </div>
@@ -198,9 +304,96 @@ export default function Checkout() {
               <div className="flex justify-between items-center pb-3 border-b border-primary-100">
                 <span className="text-primary-600">消费金额</span>
                 <span className="text-xl font-bold text-primary-800">
-                  {formatCurrency(selectedService?.price || 0)}
+                  {formatCurrency(originalAmount)}
                 </span>
               </div>
+
+              {selectedMember && memberCoupons.length > 0 && (
+                <div className="pb-3 border-b border-primary-100">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-primary-600 flex items-center gap-1">
+                      <Ticket size={16} className="text-accent-600" />
+                      优惠券
+                    </span>
+                  </div>
+                  <div className="space-y-2">
+                    {memberCoupons.map((coupon) => (
+                      <label
+                        key={coupon.id}
+                        className={`flex items-center gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
+                          selectedCoupon?.id === coupon.id
+                            ? 'border-accent-500 bg-accent-50'
+                            : 'border-primary-100 hover:border-primary-300'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="coupon"
+                          value={coupon.id}
+                          checked={selectedCoupon?.id === coupon.id}
+                          onChange={() => setSelectedCoupon(
+                            selectedCoupon?.id === coupon.id ? null : coupon
+                          )}
+                          className="hidden"
+                        />
+                        <div className="flex-1">
+                          <p className="font-medium text-primary-800">{coupon.name}</p>
+                          <p className="text-xs text-primary-500">
+                            有效期至 {coupon.validTo}
+                          </p>
+                        </div>
+                        <span className="font-bold text-accent-600">
+                          -{formatCurrency(coupon.amount)}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedMember && pointsRules && maxPointsToUse > 0 && (
+                <div className="pb-3 border-b border-primary-100">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-primary-600 flex items-center gap-1">
+                      <Gift size={16} className="text-purple-600" />
+                      积分抵扣
+                    </span>
+                    <span className="text-xs text-primary-500">
+                      可用 {maxPointsToUse} 分 · {pointsRules.exchangeRate}分=1元
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between p-3 bg-purple-50 rounded-xl">
+                    <button
+                      onClick={() => handlePointsChange(-minPointsToUse)}
+                      disabled={pointsToUse === 0}
+                      className="w-8 h-8 rounded-full bg-white border-2 border-purple-200 flex items-center justify-center hover:border-purple-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Minus size={14} className="text-purple-600" />
+                    </button>
+                    <div className="text-center">
+                      <span className="font-bold text-purple-700 text-lg">{pointsToUse}</span>
+                      <span className="text-purple-500 text-sm ml-1">分</span>
+                      {pointsDiscount > 0 && (
+                        <p className="text-xs text-purple-600">抵 {formatCurrency(pointsDiscount)}</p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => handlePointsChange(minPointsToUse)}
+                      disabled={pointsToUse >= maxPointsToUse}
+                      className="w-8 h-8 rounded-full bg-white border-2 border-purple-200 flex items-center justify-center hover:border-purple-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Plus size={14} className="text-purple-600" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {totalDiscount > 0 && (
+                <div className="flex justify-between items-center pb-3 border-b border-primary-100 text-green-600">
+                  <span>优惠合计</span>
+                  <span className="font-bold">- {formatCurrency(totalDiscount)}</span>
+                </div>
+              )}
 
               {pointsRules && (
                 <div className="flex justify-between items-center pb-3 border-b border-primary-100">
@@ -265,10 +458,18 @@ export default function Checkout() {
             </div>
 
             <div className="pt-4 border-t border-primary-100">
+              {totalDiscount > 0 && (
+                <div className="flex justify-between items-center mb-2 text-sm">
+                  <span className="text-primary-500">原价</span>
+                  <span className="text-primary-400 line-through">
+                    {formatCurrency(originalAmount)}
+                  </span>
+                </div>
+              )}
               <div className="flex justify-between items-center mb-4">
-                <span className="text-lg font-semibold text-primary-800">应收金额</span>
+                <span className="text-lg font-semibold text-primary-800">实付金额</span>
                 <span className="text-3xl font-bold text-primary-800">
-                  {formatCurrency(selectedService?.price || 0)}
+                  {formatCurrency(actualAmount)}
                 </span>
               </div>
               <button

@@ -10,7 +10,7 @@ router.get('/', (_req, res) => {
 });
 
 router.post('/', (req, res) => {
-  const { memberId, serviceName, amount, payMethod } = req.body;
+  const { memberId, serviceName, amount, payMethod, couponId, pointsUsed } = req.body;
   
   if (!memberId || !serviceName || !amount || !payMethod) {
     res.status(400).json({ error: '参数不完整' });
@@ -19,7 +19,7 @@ router.post('/', (req, res) => {
   
   const pointsRules = getPointsRules();
   const result = createConsume(
-    { memberId, serviceName, amount, payMethod },
+    { memberId, serviceName, amount, payMethod, couponId, pointsUsed },
     pointsRules
   );
   

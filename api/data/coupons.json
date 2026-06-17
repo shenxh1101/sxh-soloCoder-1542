@@ -1,0 +1,67 @@
+[
+  {
+    "id": "cp1",
+    "memberId": "m1",
+    "name": "生日专属优惠券",
+    "amount": 5000,
+    "type": "birthday",
+    "validFrom": "2026-06-15",
+    "validTo": "2026-07-15",
+    "status": "unused",
+    "usedAt": null,
+    "usedInRecordId": null,
+    "createdAt": "2026-06-15T10:00:00"
+  },
+  {
+    "id": "cp2",
+    "memberId": "m2",
+    "name": "生日专属优惠券",
+    "amount": 5000,
+    "type": "birthday",
+    "validFrom": "2026-06-10",
+    "validTo": "2026-07-10",
+    "status": "used",
+    "usedAt": "2026-06-12T14:30:00",
+    "usedInRecordId": "c2",
+    "createdAt": "2026-06-10T09:00:00"
+  },
+  {
+    "id": "cp3",
+    "memberId": "m3",
+    "name": "生日专属优惠券",
+    "amount": 5000,
+    "type": "birthday",
+    "validFrom": "2026-05-20",
+    "validTo": "2026-06-20",
+    "status": "expired",
+    "usedAt": null,
+    "usedInRecordId": null,
+    "createdAt": "2026-05-20T11:00:00"
+  },
+  {
+    "id": "cp4",
+    "memberId": "m4",
+    "name": "生日专属优惠券",
+    "amount": 5000,
+    "type": "birthday",
+    "validFrom": "2026-06-16",
+    "validTo": "2026-07-16",
+    "status": "unused",
+    "usedAt": null,
+    "usedInRecordId": null,
+    "createdAt": "2026-06-16T08:00:00"
+  },
+  {
+    "id": "cp5",
+    "memberId": "m5",
+    "name": "会员专享折扣券",
+    "amount": 3000,
+    "type": "discount",
+    "validFrom": "2026-06-01",
+    "validTo": "2026-12-31",
+    "status": "unused",
+    "usedAt": null,
+    "usedInRecordId": null,
+    "createdAt": "2026-06-01T00:00:00"
+  }
+]

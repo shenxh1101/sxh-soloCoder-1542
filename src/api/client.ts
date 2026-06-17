@@ -12,6 +12,8 @@ import type {
   ConsumeRequest,
   RechargeRequest,
   PointsExchangeRequest,
+  Coupon,
+  CouponCreateRequest,
 } from '../../shared/types/index.js';
 
 const API_BASE = '/api';
@@ -34,11 +36,15 @@ export const memberApi = {
       consumeRecords: ConsumeRecord[];
       rechargeRecords: RechargeRecord[];
       pointsRecords: PointsExchange[];
+      coupons: Coupon[];
     }>(`/members/${id}/records`),
   getUpcomingBirthdays: () =>
     api.get<(Member & { daysUntilBirthday: number })[]>('/members/birthdays'),
-  addMember: (data: Omit<Member, 'id' | 'createdAt' | 'lastVisitAt'>) =>
-    api.post<Member>('/members', data),
+  addMember: (data: Omit<Member, 'id' | 'createdAt' | 'lastVisitAt'> & { rechargeAmount?: number }) =>
+    api.post<{
+      member: Member;
+      rechargeRecord?: RechargeRecord;
+    }>('/members', data),
   updateMember: (id: string, data: Partial<Member>) =>
     api.put<Member>(`/members/${id}`, data),
 };
@@ -47,7 +53,13 @@ export const consumeApi = {
   getRecords: () =>
     api.get<ConsumeRecord[]>('/consume'),
   create: (data: ConsumeRequest) =>
-    api.post<ConsumeRecord>('/consume', data),
+    api.post<{
+      record: ConsumeRecord;
+      couponUsed?: Coupon;
+      pointsUsed: number;
+      pointsDiscount: number;
+      actualAmount: number;
+    }>('/consume', data),
 };
 
 export const rechargeApi = {
@@ -94,4 +106,19 @@ export const configApi = {
     api.get<BirthdayConfig>('/config/birthday-config'),
   updateBirthdayConfig: (config: BirthdayConfig) =>
     api.put<BirthdayConfig>('/config/birthday-config', config),
+};
+
+export const couponApi = {
+  getCoupons: () =>
+    api.get<Coupon[]>('/coupons'),
+  getCouponsByMember: (memberId: string) =>
+    api.get<Coupon[]>(`/coupons/member/${memberId}`),
+  getUnusedCouponsByMember: (memberId: string) =>
+    api.get<Coupon[]>(`/coupons/member/${memberId}/unused`),
+  getCoupon: (id: string) =>
+    api.get<Coupon>(`/coupons/${id}`),
+  createCoupon: (data: CouponCreateRequest) =>
+    api.post<Coupon>('/coupons', data),
+  useCoupon: (id: string, recordId: string) =>
+    api.post<Coupon>(`/coupons/${id}/use`, { recordId }),
 };

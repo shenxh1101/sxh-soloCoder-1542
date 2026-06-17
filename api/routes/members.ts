@@ -10,7 +10,8 @@ import {
 import { getConsumeRecordsByMemberId } from '../services/consumeService.js';
 import { getRechargeRecordsByMemberId } from '../services/rechargeService.js';
 import { getPointsExchangeRecordsByMemberId } from '../services/pointsService.js';
-import { getBirthdayConfig } from '../services/configService.js';
+import { getCouponsByMemberId } from '../services/couponService.js';
+import { getBirthdayConfig, getRechargeRules } from '../services/configService.js';
 
 const router = Router();
 
@@ -52,32 +53,39 @@ router.get('/:id/records', (req, res) => {
   const consumeRecords = getConsumeRecordsByMemberId(memberId);
   const rechargeRecords = getRechargeRecordsByMemberId(memberId);
   const pointsRecords = getPointsExchangeRecordsByMemberId(memberId);
+  const coupons = getCouponsByMemberId(memberId);
   
   res.json({
     member,
     consumeRecords,
     rechargeRecords,
     pointsRecords,
+    coupons,
   });
 });
 
 router.post('/', (req, res) => {
-  const { name, phone, birthday, balance = 0, points = 0 } = req.body;
+  const { name, phone, birthday, balance = 0, points = 0, rechargeAmount = 0 } = req.body;
   
   if (!name || !phone) {
     res.status(400).json({ error: '姓名和电话不能为空' });
     return;
   }
   
-  const newMember = addMember({
-    name,
-    phone,
-    birthday: birthday || '',
-    balance,
-    points,
-  });
+  const rechargeRules = getRechargeRules();
+  const result = addMember(
+    {
+      name,
+      phone,
+      birthday: birthday || '',
+      balance,
+      points,
+    },
+    rechargeAmount,
+    rechargeRules
+  );
   
-  res.status(201).json(newMember);
+  res.status(201).json(result);
 });
 
 router.put('/:id', (req, res) => {

@@ -6,6 +6,7 @@ import {
   pointsApi,
   statisticsApi,
   configApi,
+  couponApi,
 } from '../api/client.js';
 import type {
   Member,
@@ -19,11 +20,36 @@ import type {
   ConsumeRequest,
   RechargeRequest,
   PointsExchangeRequest,
+  Coupon,
+  CouponCreateRequest,
 } from '../../shared/types/index.js';
+
+interface MemberRecordsResponse {
+  member: Member;
+  consumeRecords: ConsumeRecord[];
+  rechargeRecords: RechargeRecord[];
+  pointsRecords: PointsExchange[];
+  coupons: Coupon[];
+}
+
+interface AddMemberResponse {
+  member: Member;
+  rechargeRecord?: RechargeRecord;
+}
+
+interface ConsumeResponse {
+  record: ConsumeRecord;
+  couponUsed?: Coupon;
+  pointsUsed: number;
+  pointsDiscount: number;
+  actualAmount: number;
+}
 
 interface AppState {
   members: Member[];
   currentMember: Member | null;
+  memberRecords: MemberRecordsResponse | null;
+  memberCoupons: Coupon[];
   rechargeRules: RechargeRule[];
   pointsRules: PointsRules | null;
   services: ServiceItem[];
@@ -38,12 +64,16 @@ interface AppState {
 
   fetchMembers: (keyword?: string) => Promise<void>;
   fetchMember: (id: string) => Promise<void>;
-  addMember: (data: Omit<Member, 'id' | 'createdAt' | 'lastVisitAt'>) => Promise<Member>;
+  fetchMemberRecords: (id: string) => Promise<void>;
+  fetchMemberCoupons: (id: string) => Promise<void>;
+  addMember: (data: Omit<Member, 'id' | 'createdAt' | 'lastVisitAt'> & { rechargeAmount?: number }) => Promise<AddMemberResponse>;
   updateMember: (id: string, data: Partial<Member>) => Promise<void>;
   
-  consume: (data: ConsumeRequest) => Promise<ConsumeRecord>;
+  consume: (data: ConsumeRequest) => Promise<ConsumeResponse>;
   recharge: (data: RechargeRequest) => Promise<RechargeRecord>;
   exchangePoints: (data: PointsExchangeRequest) => Promise<void>;
+  
+  createCoupon: (data: CouponCreateRequest) => Promise<Coupon>;
   
   fetchStatistics: (type: 'daily' | 'weekly' | 'monthly') => Promise<void>;
   fetchAllStatistics: () => Promise<void>;
@@ -61,6 +91,8 @@ interface AppState {
 export const useAppStore = create<AppState>((set, get) => ({
   members: [],
   currentMember: null,
+  memberRecords: null,
+  memberCoupons: [],
   rechargeRules: [],
   pointsRules: null,
   services: [],
@@ -90,8 +122,39 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       const res = await memberApi.getMember(id);
       set({ currentMember: res.data });
+      set((state) => ({
+        members: state.members.map(m => m.id === id ? res.data : m),
+      }));
     } catch (err: any) {
       set({ error: err.response?.data?.error || '获取会员信息失败' });
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  fetchMemberRecords: async (id) => {
+    set({ loading: true, error: null });
+    try {
+      const res = await memberApi.getMemberRecords(id);
+      set({ 
+        memberRecords: res.data,
+        currentMember: res.data.member,
+        memberCoupons: res.data.coupons,
+      });
+    } catch (err: any) {
+      set({ error: err.response?.data?.error || '获取会员记录失败' });
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  fetchMemberCoupons: async (id) => {
+    set({ loading: true, error: null });
+    try {
+      const res = await couponApi.getCouponsByMember(id);
+      set({ memberCoupons: res.data });
+    } catch (err: any) {
+      set({ error: err.response?.data?.error || '获取会员优惠券失败' });
     } finally {
       set({ loading: false });
     }
@@ -100,8 +163,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   addMember: async (data) => {
     set({ loading: true, error: null });
     try {
-      const res = await memberApi.addMember(data);
-      set((state) => ({ members: [...state.members, res.data] }));
+      const { rechargeAmount, ...memberData } = data;
+      const res = await memberApi.addMember({ ...memberData, rechargeAmount });
+      set((state) => ({ members: [...state.members, res.data.member] }));
       return res.data;
     } catch (err: any) {
       set({ error: err.response?.data?.error || '添加会员失败' });
@@ -131,6 +195,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ loading: true, error: null });
     try {
       const res = await consumeApi.create(data);
+      await get().fetchMember(data.memberId);
+      await get().fetchMemberCoupons(data.memberId);
       return res.data;
     } catch (err: any) {
       set({ error: err.response?.data?.error || '消费失败' });
@@ -144,6 +210,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ loading: true, error: null });
     try {
       const res = await rechargeApi.create(data);
+      await get().fetchMember(data.memberId);
       return res.data;
     } catch (err: any) {
       set({ error: err.response?.data?.error || '充值失败' });
@@ -157,8 +224,23 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ loading: true, error: null });
     try {
       await pointsApi.exchange(data);
+      await get().fetchMember(data.memberId);
     } catch (err: any) {
       set({ error: err.response?.data?.error || '积分兑换失败' });
+      throw err;
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  createCoupon: async (data) => {
+    set({ loading: true, error: null });
+    try {
+      const res = await couponApi.createCoupon(data);
+      await get().fetchMemberCoupons(data.memberId);
+      return res.data;
+    } catch (err: any) {
+      set({ error: err.response?.data?.error || '发放优惠券失败' });
       throw err;
     } finally {
       set({ loading: false });

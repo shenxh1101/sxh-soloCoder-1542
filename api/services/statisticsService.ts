@@ -1,8 +1,9 @@
 import { getConsumeRecords } from './consumeService.js';
 import { getRechargeRecords } from './rechargeService.js';
 import { getMembers } from './memberService.js';
+import { getCoupons, checkAndUpdateExpiredCoupons } from './couponService.js';
 import { isSameDay, isSameWeek, isSameMonth } from '../utils/format.js';
-import type { StatisticsData, ConsumeRecord, RechargeRecord } from '../../shared/types/index.js';
+import type { StatisticsData, ConsumeRecord, RechargeRecord, Coupon, MarketingStatistics } from '../../shared/types/index.js';
 
 type DateFilter = 'daily' | 'weekly' | 'monthly';
 
@@ -26,9 +27,38 @@ function filterByDate<T extends { createdAt: string }>(
   });
 }
 
+function calculateMarketingStats(
+  coupons: Coupon[],
+  filter: DateFilter
+): MarketingStatistics {
+  const filteredCoupons = filterByDate(coupons, filter);
+  
+  const couponsIssued = filteredCoupons.length;
+  const couponsUsed = filteredCoupons.filter(c => c.status === 'used').length;
+  const couponsExpired = filteredCoupons.filter(c => c.status === 'expired').length;
+  
+  const couponDiscountAmount = filteredCoupons
+    .filter(c => c.status === 'used')
+    .reduce((sum, c) => sum + c.amount, 0);
+  
+  const pointsDiscountAmount = 0;
+  
+  return {
+    couponsIssued,
+    couponsUsed,
+    couponsExpired,
+    couponDiscountAmount,
+    pointsDiscountAmount,
+    totalDiscountAmount: couponDiscountAmount + pointsDiscountAmount,
+  };
+}
+
 export function getStatistics(filter: DateFilter): StatisticsData {
+  checkAndUpdateExpiredCoupons();
+  
   const consumeRecords = filterByDate(getConsumeRecords(), filter);
   const rechargeRecords = filterByDate(getRechargeRecords(), filter);
+  const coupons = getCoupons();
   
   const cashIncome = consumeRecords
     .filter(r => r.payMethod === 'cash')
@@ -46,6 +76,8 @@ export function getStatistics(filter: DateFilter): StatisticsData {
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
+  const marketing = calculateMarketingStats(coupons, filter);
+
   return {
     cashIncome,
     rechargeIncome,
@@ -53,6 +85,7 @@ export function getStatistics(filter: DateFilter): StatisticsData {
     consumeCount,
     memberCount,
     records: allRecords as (ConsumeRecord | RechargeRecord)[],
+    marketing,
   };
 }
 
