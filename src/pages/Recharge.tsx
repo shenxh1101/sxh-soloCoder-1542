@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Search, User, Wallet, Gift, TrendingUp, CheckCircle, Settings } from 'lucide-react';
 import { useAppStore } from '../store/index.js';
@@ -9,16 +9,22 @@ import type { Member, RechargeRule } from '../../shared/types/index.js';
 export default function Recharge() {
   const { members, rechargeRules, fetchMembers, fetchConfig, recharge, loading } = useAppStore();
   const [searchKeyword, setSearchKeyword] = useState('');
-  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [rechargeAmount, setRechargeAmount] = useState<number>(0);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [lastBonus, setLastBonus] = useState(0);
+  const [lastRechargeAmount, setLastRechargeAmount] = useState(0);
 
   useEffect(() => {
     fetchMembers();
     fetchConfig();
   }, [fetchMembers, fetchConfig]);
+
+  const selectedMember = useMemo(
+    () => selectedMemberId ? members.find(m => m.id === selectedMemberId) ?? null : null,
+    [selectedMemberId, members]
+  );
 
   const filteredMembers = members.filter(m =>
     m.name.includes(searchKeyword) || m.phone.includes(searchKeyword)
@@ -57,29 +63,29 @@ export default function Recharge() {
         rechargeAmount,
       });
       setLastBonus(bonusAmount);
+      setLastRechargeAmount(rechargeAmount);
       setShowSuccess(true);
       setToast({ message: '充值成功！', type: 'success' });
       
       setTimeout(() => {
         setShowSuccess(false);
         setRechargeAmount(0);
-        fetchMembers();
       }, 2000);
     } catch (err) {
       console.error('Failed to recharge:', err);
     }
   };
 
-  if (showSuccess) {
+  if (showSuccess && selectedMember) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="text-center animate-bounce">
+        <div className="text-center animate-fadeIn">
           <div className="w-24 h-24 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-6">
             <CheckCircle size={48} className="text-green-600" />
           </div>
           <h2 className="font-serif text-2xl font-bold text-primary-800 mb-2">充值成功</h2>
           <p className="text-primary-500">
-            {selectedMember?.name} 充值 {formatCurrency(rechargeAmount)}
+            {selectedMember.name} 充值 {formatCurrency(lastRechargeAmount)}
           </p>
           {lastBonus > 0 && (
             <p className="text-accent-600 mt-1">
@@ -87,7 +93,10 @@ export default function Recharge() {
             </p>
           )}
           <p className="text-lg font-bold text-primary-800 mt-2">
-            实际到账: {formatCurrency(rechargeAmount + lastBonus)}
+            实际到账: {formatCurrency(lastRechargeAmount + lastBonus)}
+          </p>
+          <p className="text-sm text-green-600 mt-3">
+            当前余额: {formatCurrency(selectedMember.balance)}
           </p>
         </div>
       </div>
@@ -138,7 +147,7 @@ export default function Recharge() {
                     <p className="font-bold text-primary-800">{formatCurrency(selectedMember.balance)}</p>
                   </div>
                   <button
-                    onClick={() => setSelectedMember(null)}
+                    onClick={() => setSelectedMemberId(null)}
                     className="text-primary-400 hover:text-primary-600 text-sm"
                   >
                     更换
@@ -150,7 +159,7 @@ export default function Recharge() {
                 {filteredMembers.map((member) => (
                   <button
                     key={member.id}
-                    onClick={() => setSelectedMember(member)}
+                    onClick={() => setSelectedMemberId(member.id)}
                     className="w-full p-3 flex items-center gap-3 rounded-xl hover:bg-primary-50 transition-colors text-left"
                   >
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white font-bold">

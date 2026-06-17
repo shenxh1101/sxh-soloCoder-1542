@@ -20,6 +20,7 @@ import type {
   ConsumeRequest,
   RechargeRequest,
   PointsExchangeRequest,
+  PointsExchange,
   Coupon,
   CouponCreateRequest,
 } from '../../shared/types/index.js';

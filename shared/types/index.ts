@@ -14,6 +14,11 @@ export interface ConsumeRecord {
   memberId: string;
   serviceName: string;
   amount: number;
+  originalAmount: number;
+  couponDiscount: number;
+  couponId: string | null;
+  pointsUsed: number;
+  pointsDiscount: number;
   payMethod: 'balance' | 'cash';
   pointsEarned: number;
   createdAt: string;
@@ -98,6 +103,8 @@ export interface CouponCreateRequest {
   name: string;
   amount: number;
   type: 'birthday' | 'discount' | 'gift';
+  validFrom?: string;
+  validTo?: string;
   validDays?: number;
 }
 

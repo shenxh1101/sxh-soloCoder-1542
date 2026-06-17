@@ -1,16 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Search, User, Wallet, CreditCard, Gift, CheckCircle, Ticket, Minus, Plus } from 'lucide-react';
 import { useAppStore } from '../store/index.js';
 import ServiceCard from '../components/ServiceCard.js';
 import Toast from '../components/Toast.js';
 import { formatCurrency, formatPhone } from '../utils/format.js';
-import type { Member, ServiceItem, Coupon } from '../../shared/types/index.js';
+import type { ServiceItem, Coupon } from '../../shared/types/index.js';
 import { couponApi } from '../api/client.js';
 
 export default function Checkout() {
   const { members, services, pointsRules, fetchMembers, fetchConfig, consume, loading } = useAppStore();
   const [searchKeyword, setSearchKeyword] = useState('');
-  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [selectedService, setSelectedService] = useState<ServiceItem | null>(null);
   const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
   const [pointsToUse, setPointsToUse] = useState(0);
@@ -19,6 +19,7 @@ export default function Checkout() {
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [consumeResult, setConsumeResult] = useState<{
+    originalAmount: number;
     actualAmount: number;
     couponUsed?: Coupon;
     pointsUsed: number;
@@ -30,20 +31,30 @@ export default function Checkout() {
     fetchConfig();
   }, [fetchMembers, fetchConfig]);
 
+  const selectedMember = useMemo(
+    () => selectedMemberId ? members.find(m => m.id === selectedMemberId) ?? null : null,
+    [selectedMemberId, members]
+  );
+
   useEffect(() => {
-    if (selectedMember) {
-      loadMemberCoupons();
+    if (selectedMemberId) {
+      loadMemberCoupons(selectedMemberId);
     } else {
       setMemberCoupons([]);
       setSelectedCoupon(null);
       setPointsToUse(0);
     }
-  }, [selectedMember]);
+  }, [selectedMemberId]);
 
-  const loadMemberCoupons = async () => {
-    if (!selectedMember) return;
+  useEffect(() => {
+    if (selectedCoupon && !memberCoupons.find(c => c.id === selectedCoupon.id)) {
+      setSelectedCoupon(null);
+    }
+  }, [memberCoupons, selectedCoupon]);
+
+  const loadMemberCoupons = async (memberId: string) => {
     try {
-      const res = await couponApi.getUnusedCouponsByMember(selectedMember.id);
+      const res = await couponApi.getUnusedCouponsByMember(memberId);
       setMemberCoupons(res.data);
     } catch (err) {
       console.error('Failed to load coupons:', err);
@@ -112,6 +123,7 @@ export default function Checkout() {
       });
       
       setConsumeResult({
+        originalAmount: selectedService.price,
         actualAmount: result.actualAmount,
         couponUsed: result.couponUsed,
         pointsUsed: result.pointsUsed,
@@ -127,8 +139,9 @@ export default function Checkout() {
         setSelectedCoupon(null);
         setPointsToUse(0);
         setConsumeResult(null);
-        fetchMembers();
-        loadMemberCoupons();
+        if (selectedMemberId) {
+          loadMemberCoupons(selectedMemberId);
+        }
       }, 3000);
     } catch (err) {
       console.error('Failed to consume:', err);
@@ -152,7 +165,7 @@ export default function Checkout() {
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-primary-600">原价</span>
-                <span className="font-medium text-primary-800">{formatCurrency(originalAmount)}</span>
+                <span className="font-medium text-primary-800">{formatCurrency(consumeResult.originalAmount)}</span>
               </div>
               {consumeResult.couponUsed && (
                 <div className="flex justify-between text-accent-600">
@@ -227,7 +240,7 @@ export default function Checkout() {
                     <p className="font-bold text-primary-800">{formatCurrency(selectedMember.balance)}</p>
                   </div>
                   <button
-                    onClick={() => setSelectedMember(null)}
+                    onClick={() => setSelectedMemberId(null)}
                     className="text-primary-400 hover:text-primary-600 text-sm"
                   >
                     更换
@@ -239,7 +252,7 @@ export default function Checkout() {
                 {filteredMembers.map((member) => (
                   <button
                     key={member.id}
-                    onClick={() => setSelectedMember(member)}
+                    onClick={() => setSelectedMemberId(member.id)}
                     className="w-full p-3 flex items-center gap-3 rounded-xl hover:bg-primary-50 transition-colors text-left"
                   >
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white font-bold">

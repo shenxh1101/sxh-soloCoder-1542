@@ -35,12 +35,20 @@ export function createCoupon(data: CouponCreateRequest): Coupon | { error: strin
     return { error: '会员不存在' };
   }
 
-  const validDays = data.validDays || 30;
   const now = new Date();
-  const validFrom = formatDate(now);
-  const validToDate = new Date(now);
-  validToDate.setDate(validToDate.getDate() + validDays);
-  const validTo = formatDate(validToDate);
+  let validFrom: string;
+  let validTo: string;
+
+  if (data.validFrom && data.validTo) {
+    validFrom = data.validFrom;
+    validTo = data.validTo;
+  } else {
+    const validDays = data.validDays || 30;
+    validFrom = formatDate(now);
+    const validToDate = new Date(now);
+    validToDate.setDate(validToDate.getDate() + validDays);
+    validTo = formatDate(validToDate);
+  }
 
   const newCoupon: Coupon = {
     id: generateId('cp'),

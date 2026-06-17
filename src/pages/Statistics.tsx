@@ -129,8 +129,8 @@ export default function Statistics() {
             <BarChart3 size={20} className="text-white" />
           </div>
           <div>
-            <h3 className="font-serif text-xl font-semibold text-primary-800">营销统计</h3>
-            <p className="text-sm text-primary-500">优惠券和积分抵扣情况</p>
+            <h3 className="font-serif text-xl font-semibold text-primary-800">营销统计（本月）</h3>
+            <p className="text-sm text-primary-500">固定按本月口径汇总，方便月底盘账</p>
           </div>
         </div>
 

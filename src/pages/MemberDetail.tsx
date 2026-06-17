@@ -209,30 +209,65 @@ export default function MemberDetail() {
           {activeTab === 'consume' && (
             <div className="space-y-3">
               {consumeRecords.length > 0 ? (
-                consumeRecords.map((record) => (
-                  <div
-                    key={record.id}
-                    className="flex items-center justify-between p-4 bg-primary-50/50 rounded-xl"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
-                        <CreditCard size={18} />
+                consumeRecords.map((record) => {
+                  const hasDiscount = (record.couponDiscount > 0 || record.pointsDiscount > 0);
+                  return (
+                    <div
+                      key={record.id}
+                      className="p-4 bg-primary-50/50 rounded-xl"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
+                            <CreditCard size={18} />
+                          </div>
+                          <div>
+                            <p className="font-medium text-primary-800">{record.serviceName}</p>
+                            <p className="text-sm text-primary-500">{formatDateTime(record.createdAt)}</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-semibold text-primary-800">
+                            {hasDiscount ? formatCurrency(record.amount) : formatCurrency(record.amount)}
+                          </p>
+                          <p className="text-xs text-primary-500">
+                            {record.payMethod === 'balance' ? '余额支付' : '现金支付'}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-medium text-primary-800">{record.serviceName}</p>
-                        <p className="text-sm text-primary-500">{formatDateTime(record.createdAt)}</p>
+                      {hasDiscount && (
+                        <div className="mt-2 pt-2 border-t border-primary-100 space-y-1">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-primary-500">原价</span>
+                            <span className="text-primary-700">{formatCurrency(record.originalAmount)}</span>
+                          </div>
+                          {record.couponDiscount > 0 && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-accent-600">优惠券抵扣</span>
+                              <span className="text-accent-600 font-medium">- {formatCurrency(record.couponDiscount)}</span>
+                            </div>
+                          )}
+                          {record.pointsDiscount > 0 && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-purple-600">积分抵扣 ({record.pointsUsed}分)</span>
+                              <span className="text-purple-600 font-medium">- {formatCurrency(record.pointsDiscount)}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between text-sm font-medium">
+                            <span className="text-primary-700">实付</span>
+                            <span className="text-primary-800">{formatCurrency(record.amount)}</span>
+                          </div>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between mt-2 text-xs">
+                        <span className="text-primary-500">
+                          {record.payMethod === 'balance' ? '余额支付' : '现金支付'}
+                        </span>
+                        <span className="text-accent-600">+{record.pointsEarned} 积分</span>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-primary-800">{formatCurrency(record.amount)}</p>
-                      <p className="text-xs text-primary-500">
-                        {record.payMethod === 'balance' ? '余额支付' : '现金支付'}
-                        {' · +'}
-                        {record.pointsEarned}积分
-                      </p>
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               ) : (
                 <div className="text-center py-12 text-primary-400">
                   <CreditCard size={40} className="mx-auto mb-2 opacity-50" />

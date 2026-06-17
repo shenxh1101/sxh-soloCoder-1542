@@ -29,19 +29,21 @@ function filterByDate<T extends { createdAt: string }>(
 
 function calculateMarketingStats(
   coupons: Coupon[],
-  filter: DateFilter
+  consumeRecords: ConsumeRecord[]
 ): MarketingStatistics {
-  const filteredCoupons = filterByDate(coupons, filter);
+  const now = new Date();
   
-  const couponsIssued = filteredCoupons.length;
-  const couponsUsed = filteredCoupons.filter(c => c.status === 'used').length;
-  const couponsExpired = filteredCoupons.filter(c => c.status === 'expired').length;
+  const monthlyCoupons = coupons.filter(c => isSameMonth(new Date(c.createdAt), now));
+  const couponsIssued = monthlyCoupons.length;
+  const couponsUsed = monthlyCoupons.filter(c => c.status === 'used').length;
+  const couponsExpired = monthlyCoupons.filter(c => c.status === 'expired').length;
   
-  const couponDiscountAmount = filteredCoupons
-    .filter(c => c.status === 'used')
+  const couponDiscountAmount = monthlyCoupons
+    .filter(c => c.status === 'used' && c.usedAt)
     .reduce((sum, c) => sum + c.amount, 0);
   
-  const pointsDiscountAmount = 0;
+  const monthlyConsumes = consumeRecords.filter(r => isSameMonth(new Date(r.createdAt), now));
+  const pointsDiscountAmount = monthlyConsumes.reduce((sum, r) => sum + (r.pointsDiscount || 0), 0);
   
   return {
     couponsIssued,
@@ -59,6 +61,7 @@ export function getStatistics(filter: DateFilter): StatisticsData {
   const consumeRecords = filterByDate(getConsumeRecords(), filter);
   const rechargeRecords = filterByDate(getRechargeRecords(), filter);
   const coupons = getCoupons();
+  const allConsumeRecords = getConsumeRecords();
   
   const cashIncome = consumeRecords
     .filter(r => r.payMethod === 'cash')
@@ -76,7 +79,7 @@ export function getStatistics(filter: DateFilter): StatisticsData {
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
-  const marketing = calculateMarketingStats(coupons, filter);
+  const marketing = calculateMarketingStats(coupons, allConsumeRecords);
 
   return {
     cashIncome,
