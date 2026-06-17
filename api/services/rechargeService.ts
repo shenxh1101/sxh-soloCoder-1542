@@ -1,0 +1,50 @@
+import { readJSONFile, writeJSONFile, generateId } from '../utils/file.js';
+import { formatDate, calculateBonusAmount } from '../utils/format.js';
+import { getMemberById, updateMember } from './memberService.js';
+import type { RechargeRecord, RechargeRequest, RechargeRule } from '../../shared/types/index.js';
+
+export function getRechargeRecords(): RechargeRecord[] {
+  return readJSONFile<RechargeRecord[]>('rechargeRecords.json');
+}
+
+export function getRechargeRecordsByMemberId(memberId: string): RechargeRecord[] {
+  const records = getRechargeRecords();
+  return records.filter(r => r.memberId === memberId).sort((a, b) => 
+    new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+}
+
+export function createRecharge(
+  data: RechargeRequest,
+  rules: RechargeRule[]
+): RechargeRecord | { error: string } {
+  const member = getMemberById(data.memberId);
+  if (!member) {
+    return { error: '会员不存在' };
+  }
+
+  const bonusAmount = calculateBonusAmount(data.rechargeAmount, rules);
+  const totalAmount = data.rechargeAmount + bonusAmount;
+
+  const newRecord: RechargeRecord = {
+    id: generateId('r'),
+    memberId: data.memberId,
+    rechargeAmount: data.rechargeAmount,
+    bonusAmount,
+    createdAt: formatDate(new Date()),
+  };
+
+  const records = getRechargeRecords();
+  records.push(newRecord);
+  writeJSONFile('rechargeRecords.json', records);
+
+  updateMember(member.id, {
+    balance: member.balance + totalAmount,
+  });
+
+  return newRecord;
+}
+
+export function getBonusForAmount(amount: number, rules: RechargeRule[]): number {
+  return calculateBonusAmount(amount, rules);
+}

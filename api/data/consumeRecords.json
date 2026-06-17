@@ -1,0 +1,110 @@
+[
+  {
+    "id": "c001",
+    "memberId": "m001",
+    "serviceName": "精剪",
+    "amount": 6800,
+    "payMethod": "balance",
+    "pointsEarned": 68,
+    "createdAt": "2026-06-10T14:20:00.000Z"
+  },
+  {
+    "id": "c002",
+    "memberId": "m002",
+    "serviceName": "烫染套餐",
+    "amount": 59800,
+    "payMethod": "balance",
+    "pointsEarned": 598,
+    "createdAt": "2026-06-12T16:45:00.000Z"
+  },
+  {
+    "id": "c003",
+    "memberId": "m003",
+    "serviceName": "营养护理",
+    "amount": 19800,
+    "payMethod": "balance",
+    "pointsEarned": 198,
+    "createdAt": "2026-06-15T10:30:00.000Z"
+  },
+  {
+    "id": "c004",
+    "memberId": "m004",
+    "serviceName": "洗吹造型",
+    "amount": 3800,
+    "payMethod": "cash",
+    "pointsEarned": 38,
+    "createdAt": "2026-06-08T09:15:00.000Z"
+  },
+  {
+    "id": "c005",
+    "memberId": "m005",
+    "serviceName": "热烫",
+    "amount": 39800,
+    "payMethod": "balance",
+    "pointsEarned": 398,
+    "createdAt": "2026-06-14T15:00:00.000Z"
+  },
+  {
+    "id": "c006",
+    "memberId": "m001",
+    "serviceName": "精剪",
+    "amount": 6800,
+    "payMethod": "balance",
+    "pointsEarned": 68,
+    "createdAt": "2026-06-16T10:00:00.000Z"
+  },
+  {
+    "id": "c007",
+    "memberId": "m006",
+    "serviceName": "总监剪发",
+    "amount": 12800,
+    "payMethod": "cash",
+    "pointsEarned": 128,
+    "createdAt": "2026-06-05T11:30:00.000Z"
+  },
+  {
+    "id": "c008",
+    "memberId": "m007",
+    "serviceName": "染发",
+    "amount": 36800,
+    "payMethod": "balance",
+    "pointsEarned": 368,
+    "createdAt": "2026-06-11T17:20:00.000Z"
+  },
+  {
+    "id": "c009",
+    "memberId": "m008",
+    "serviceName": "护理套餐",
+    "amount": 49800,
+    "payMethod": "balance",
+    "pointsEarned": 498,
+    "createdAt": "2026-06-13T14:00:00.000Z"
+  },
+  {
+    "id": "c010",
+    "memberId": "m002",
+    "serviceName": "精剪",
+    "amount": 6800,
+    "payMethod": "balance",
+    "pointsEarned": 68,
+    "createdAt": "2026-06-16T15:30:00.000Z"
+  },
+  {
+    "id": "c011",
+    "memberId": "m003",
+    "serviceName": "精剪",
+    "amount": 6800,
+    "payMethod": "balance",
+    "pointsEarned": 68,
+    "createdAt": "2026-06-16T09:00:00.000Z"
+  },
+  {
+    "id": "c012",
+    "memberId": "m005",
+    "serviceName": "洗吹造型",
+    "amount": 3800,
+    "payMethod": "cash",
+    "pointsEarned": 38,
+    "createdAt": "2026-06-17T10:30:00.000Z"
+  }
+]

@@ -1,0 +1,89 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&family=Noto+Serif+SC:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: "Noto Sans SC", system-ui, sans-serif;
+  line-height: 1.6;
+  font-weight: 400;
+  color: #3E2723;
+  background-color: #FFF8E1;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #FFF8E1 0%, #FFECB3 100%);
+}
+
+@layer components {
+  .btn-primary {
+    @apply px-6 py-3 bg-primary-700 text-white rounded-lg font-medium;
+    @apply hover:bg-primary-800 hover:shadow-md transition-all duration-200;
+    @apply active:scale-[0.98];
+  }
+
+  .btn-accent {
+    @apply px-6 py-3 bg-accent-500 text-primary-900 rounded-lg font-medium;
+    @apply hover:bg-accent-600 hover:shadow-md transition-all duration-200;
+    @apply active:scale-[0.98];
+  }
+
+  .btn-outline {
+    @apply px-6 py-3 border-2 border-primary-700 text-primary-700 rounded-lg font-medium;
+    @apply hover:bg-primary-700 hover:text-white transition-all duration-200;
+    @apply active:scale-[0.98];
+  }
+
+  .btn-ghost {
+    @apply px-4 py-2 text-primary-700 rounded-lg font-medium;
+    @apply hover:bg-primary-100 transition-all duration-200;
+  }
+
+  .card {
+    @apply bg-white rounded-2xl shadow-soft p-6;
+    @apply border border-primary-100/50;
+  }
+
+  .card-hover {
+    @apply card hover:shadow-card transition-all duration-300;
+    @apply hover:-translate-y-1;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-3 bg-white border-2 border-primary-200 rounded-lg;
+    @apply focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-100;
+    @apply transition-all duration-200;
+  }
+
+  .stat-card {
+    @apply relative overflow-hidden rounded-2xl p-6 text-white;
+    @apply shadow-card transition-all duration-300 hover:scale-[1.02];
+  }
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #EFEBE9;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #BCAAA4;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #8D6E63;
+}

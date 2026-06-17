@@ -1,0 +1,28 @@
+{
+  "rechargeRules": [
+    { "minAmount": 30000, "bonusAmount": 5000 },
+    { "minAmount": 50000, "bonusAmount": 10000 },
+    { "minAmount": 100000, "bonusAmount": 30000 }
+  ],
+  "pointsRules": {
+    "pointsPerYuan": 1,
+    "exchangeRate": 100,
+    "minPoints": 100
+  },
+  "services": [
+    { "id": "1", "name": "精剪", "price": 6800, "category": "haircut" },
+    { "id": "2", "name": "总监剪发", "price": 12800, "category": "haircut" },
+    { "id": "3", "name": "洗吹造型", "price": 3800, "category": "haircut" },
+    { "id": "4", "name": "冷烫", "price": 29800, "category": "perm" },
+    { "id": "5", "name": "热烫", "price": 39800, "category": "perm" },
+    { "id": "6", "name": "染发", "price": 36800, "category": "perm" },
+    { "id": "7", "name": "烫染套餐", "price": 59800, "category": "perm" },
+    { "id": "8", "name": "营养护理", "price": 19800, "category": "treatment" },
+    { "id": "9", "name": "深层护理", "price": 29800, "category": "treatment" },
+    { "id": "10", "name": "护理套餐", "price": 49800, "category": "treatment" }
+  ],
+  "birthdayConfig": {
+    "remindDays": 7,
+    "couponAmount": 5000
+  }
+}
