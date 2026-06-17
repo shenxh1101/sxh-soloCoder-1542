@@ -10,6 +10,7 @@ import RechargeRules from './pages/RechargeRules.js';
 import Points from './pages/Points.js';
 import PointsRules from './pages/PointsRules.js';
 import Statistics from './pages/Statistics.js';
+import Statement from './pages/Statement.js';
 import Settings from './pages/Settings.js';
 import Home from './pages/Home.js';
 
@@ -29,6 +30,7 @@ export default function App() {
           <Route path="points" element={<Points />} />
           <Route path="points/rules" element={<PointsRules />} />
           <Route path="statistics" element={<Statistics />} />
+          <Route path="statistics/statement" element={<Statement />} />
           <Route path="settings" element={<Settings />} />
         </Route>
       </Routes>

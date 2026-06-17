@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   Wallet,
   CreditCard,
@@ -12,6 +13,7 @@ import {
   BarChart3,
   CheckCircle,
   Send,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { useAppStore } from '../store/index.js';
 import StatCard from '../components/StatCard.js';
@@ -79,20 +81,29 @@ export default function Statistics() {
       )}
 
       <div className="card">
-        <div className="flex items-center gap-2 p-1 bg-primary-50 rounded-xl w-fit">
-          {tabs.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
-                activeTab === tab.key
-                  ? 'bg-white text-primary-700 shadow-md'
-                  : 'text-primary-500 hover:text-primary-700'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 p-1 bg-primary-50 rounded-xl">
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${
+                  activeTab === tab.key
+                    ? 'bg-white text-primary-700 shadow-md'
+                    : 'text-primary-500 hover:text-primary-700'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          <Link
+            to="/statistics/statement"
+            className="btn-accent flex items-center gap-2 text-sm"
+          >
+            <FileSpreadsheet size={16} />
+            月底对账
+          </Link>
         </div>
       </div>
 

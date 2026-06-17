@@ -14,6 +14,8 @@ import {
   CheckCircle,
   XCircle,
   Clock3,
+  X,
+  Receipt,
 } from 'lucide-react';
 import { memberApi } from '../api/client.js';
 import { formatCurrency, formatDate, formatDateTime, formatPhone, getAge } from '../utils/format.js';
@@ -30,6 +32,7 @@ export default function MemberDetail() {
     coupons: Coupon[];
   } | null>(null);
   const [activeTab, setActiveTab] = useState<'consume' | 'recharge' | 'points' | 'coupons'>('consume');
+  const [selectedRecord, setSelectedRecord] = useState<ConsumeRecord | null>(null);
 
   useEffect(() => {
     if (id) {
@@ -212,9 +215,10 @@ export default function MemberDetail() {
                 consumeRecords.map((record) => {
                   const hasDiscount = (record.couponDiscount > 0 || record.pointsDiscount > 0);
                   return (
-                    <div
+                    <button
                       key={record.id}
-                      className="p-4 bg-primary-50/50 rounded-xl"
+                      onClick={() => setSelectedRecord(record)}
+                      className="w-full text-left p-4 bg-primary-50/50 rounded-xl hover:bg-primary-100/50 transition-colors"
                     >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-3">
@@ -228,7 +232,7 @@ export default function MemberDetail() {
                         </div>
                         <div className="text-right">
                           <p className="font-semibold text-primary-800">
-                            {hasDiscount ? formatCurrency(record.amount) : formatCurrency(record.amount)}
+                            {formatCurrency(record.amount)}
                           </p>
                           <p className="text-xs text-primary-500">
                             {record.payMethod === 'balance' ? '余额支付' : '现金支付'}
@@ -265,7 +269,7 @@ export default function MemberDetail() {
                         </span>
                         <span className="text-accent-600">+{record.pointsEarned} 积分</span>
                       </div>
-                    </div>
+                    </button>
                   );
                 })
               ) : (
@@ -467,6 +471,120 @@ export default function MemberDetail() {
           )}
         </div>
       </div>
+
+      {selectedRecord && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => setSelectedRecord(null)}
+        >
+          <div
+            className="bg-white rounded-2xl max-w-sm w-full max-h-[90vh] overflow-y-auto animate-fadeIn"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-100 to-primary-600 flex items-center justify-center">
+                    <Receipt size={20} className="text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-serif text-lg font-semibold text-primary-800">消费小票</h3>
+                    <p className="text-xs text-primary-500">{selectedRecord.id}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedRecord(null)}
+                  className="w-8 h-8 rounded-full hover:bg-primary-100 flex items-center justify-center text-primary-500"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="p-4 bg-primary-50 rounded-xl">
+                  <p className="text-sm text-primary-500 mb-1">服务项目</p>
+                  <p className="font-semibold text-primary-800 text-lg">{selectedRecord.serviceName}</p>
+                  <p className="text-xs text-primary-400 mt-1">
+                    {formatDateTime(selectedRecord.createdAt)}
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-primary-500">原价</span>
+                    <span className="text-primary-700">{formatCurrency(selectedRecord.originalAmount)}</span>
+                  </div>
+
+                  {selectedRecord.couponDiscount > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-accent-600 flex items-center gap-1">
+                        <Ticket size={14} />
+                        优惠券抵扣
+                      </span>
+                      <span className="text-accent-600 font-medium">
+                        - {formatCurrency(selectedRecord.couponDiscount)}
+                      </span>
+                    </div>
+                  )}
+
+                  {selectedRecord.pointsDiscount > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-purple-600 flex items-center gap-1">
+                        <Gift size={14} />
+                        积分抵扣 ({selectedRecord.pointsUsed} 分)
+                      </span>
+                      <span className="text-purple-600 font-medium">
+                        - {formatCurrency(selectedRecord.pointsDiscount)}
+                      </span>
+                    </div>
+                  )}
+
+                  {(selectedRecord.couponDiscount > 0 || selectedRecord.pointsDiscount > 0) && (
+                    <div className="border-t border-primary-100 pt-2 mt-2">
+                      <div className="flex justify-between">
+                        <span className="font-medium text-primary-700">实付金额</span>
+                        <span className="font-bold text-primary-800 text-lg">
+                          {formatCurrency(selectedRecord.amount)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedRecord.couponDiscount === 0 && selectedRecord.pointsDiscount === 0 && (
+                    <div className="border-t border-primary-100 pt-2 mt-2">
+                      <div className="flex justify-between">
+                        <span className="font-medium text-primary-700">实付金额</span>
+                        <span className="font-bold text-primary-800 text-lg">
+                          {formatCurrency(selectedRecord.amount)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-3 bg-accent-50 rounded-xl space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-primary-600">支付方式</span>
+                    <span className="font-medium text-primary-800">
+                      {selectedRecord.payMethod === 'balance' ? '会员卡余额' : '现金'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-primary-600">获得积分</span>
+                    <span className="font-medium text-accent-600">
+                      + {selectedRecord.pointsEarned} 分
+                    </span>
+                  </div>
+                </div>
+
+                <div className="text-center text-xs text-primary-400 pt-2 border-t border-dashed border-primary-200">
+                  凭此小票可享受售后服务 · 谢谢光临
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

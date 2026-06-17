@@ -9,6 +9,7 @@ import type {
   ServiceItem,
   BirthdayConfig,
   StatisticsData,
+  MonthlyStatement,
   ConsumeRequest,
   RechargeRequest,
   PointsExchangeRequest,
@@ -87,6 +88,10 @@ export const statisticsApi = {
     api.get<StatisticsData>('/statistics/monthly'),
   getTrend: (days?: number) =>
     api.get<{ date: string; cash: number; recharge: number }[]>('/statistics/trend', { params: { days } }),
+  getStatement: (year: number, month: number) =>
+    api.get<MonthlyStatement>('/statistics/statement', { params: { year, month } }),
+  getStatementCsvUrl: (year: number, month: number) =>
+    `/api/statistics/statement/csv?year=${year}&month=${month}`,
 };
 
 export const configApi = {

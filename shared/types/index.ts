@@ -126,6 +126,23 @@ export interface MarketingStatistics {
   totalDiscountAmount: number;
 }
 
+export interface MonthlyStatement {
+  month: string;
+  totalIncome: number;
+  cashIncome: number;
+  rechargeIncome: number;
+  bonusAmount: number;
+  balanceDeduction: number;
+  couponDiscountAmount: number;
+  pointsDiscountAmount: number;
+  totalDiscountAmount: number;
+  consumeCount: number;
+  newMemberCount: number;
+  totalConsumeAmount: number;
+  originalConsumeAmount: number;
+  marketing: MarketingStatistics;
+}
+
 export interface StatisticsData {
   cashIncome: number;
   rechargeIncome: number;

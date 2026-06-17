@@ -66,3 +66,7 @@ export function isSameMonth(date1: Date, date2: Date): boolean {
     date1.getMonth() === date2.getMonth()
   );
 }
+
+export function formatMonth(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}
