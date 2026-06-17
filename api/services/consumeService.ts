@@ -34,6 +34,7 @@ export function createConsume(
 
   let couponDiscount = 0;
   let usedCoupon: Coupon | undefined;
+  let couponName: string | undefined;
 
   if (data.couponId) {
     const coupon = getCouponById(data.couponId);
@@ -52,6 +53,7 @@ export function createConsume(
       return { error: '优惠券已过期' };
     }
     couponDiscount = coupon.amount;
+    couponName = coupon.name;
   }
 
   let pointsDiscount = 0;
@@ -76,18 +78,30 @@ export function createConsume(
 
   const pointsEarned = calculatePoints(actualAmount, pointsRules.pointsPerYuan);
 
+  const balanceBefore = member.balance;
+  const pointsBefore = member.points;
+  const newBalance = data.payMethod === 'balance' ? balanceBefore - actualAmount : balanceBefore;
+  const newPoints = pointsBefore - pointsUsed + pointsEarned;
+
   const newRecord: ConsumeRecord = {
     id: generateId('c'),
     memberId: data.memberId,
+    memberName: member.name,
+    memberPhone: member.phone,
     serviceName: data.serviceName,
     amount: actualAmount,
     originalAmount: data.amount,
     couponDiscount,
     couponId: data.couponId || null,
+    couponName,
     pointsUsed,
     pointsDiscount,
     payMethod: data.payMethod,
     pointsEarned,
+    balanceBefore,
+    balanceAfter: newBalance,
+    pointsBefore,
+    pointsAfter: newPoints,
     createdAt: new Date().toISOString(),
   };
 
@@ -103,9 +117,6 @@ export function createConsume(
     usedCoupon = couponResult;
   }
 
-  const newBalance = data.payMethod === 'balance' ? member.balance - actualAmount : member.balance;
-  const newPoints = member.points - pointsUsed + pointsEarned;
-  
   updateMember(member.id, {
     balance: newBalance,
     points: newPoints,

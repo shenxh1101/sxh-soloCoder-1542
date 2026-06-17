@@ -40,8 +40,14 @@ export function addMember(
     rechargeRecord = {
       id: generateId('r'),
       memberId: '',
+      memberName: data.name,
+      memberPhone: data.phone,
       rechargeAmount,
       bonusAmount,
+      balanceBefore: data.balance,
+      balanceAfter: data.balance + totalBalance,
+      pointsBefore: data.points,
+      pointsAfter: data.points,
       createdAt: new Date().toISOString(),
     };
   }

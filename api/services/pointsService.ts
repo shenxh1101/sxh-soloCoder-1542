@@ -36,26 +36,35 @@ export function exchangePoints(
     cashValue = Math.floor(data.pointsUsed / pointsRules.exchangeRate) * 100;
   }
 
+  const balanceBefore = member.balance;
+  const pointsBefore = member.points;
+  const newBalance = data.exchangeType === 'cash' 
+    ? balanceBefore + cashValue 
+    : balanceBefore;
+  const newPoints = pointsBefore - data.pointsUsed;
+
   const newRecord: PointsExchange = {
     id: generateId('p'),
     memberId: data.memberId,
+    memberName: member.name,
+    memberPhone: member.phone,
     pointsUsed: data.pointsUsed,
     exchangeType: data.exchangeType,
     cashValue,
     productName: data.productName || '',
-    createdAt: formatDate(new Date()),
+    balanceBefore,
+    balanceAfter: newBalance,
+    pointsBefore,
+    pointsAfter: newPoints,
+    createdAt: new Date().toISOString(),
   };
 
   const records = getPointsExchangeRecords();
   records.push(newRecord);
   writeJSONFile('pointsExchange.json', records);
 
-  const newBalance = data.exchangeType === 'cash' 
-    ? member.balance + cashValue 
-    : member.balance;
-
   updateMember(member.id, {
-    points: member.points - data.pointsUsed,
+    points: newPoints,
     balance: newBalance,
   });
 

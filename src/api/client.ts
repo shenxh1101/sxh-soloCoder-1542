@@ -15,6 +15,8 @@ import type {
   PointsExchangeRequest,
   Coupon,
   CouponCreateRequest,
+  ReconciliationState,
+  LedgerRecord,
 } from '../../shared/types/index.js';
 
 const API_BASE = '/api';
@@ -89,9 +91,15 @@ export const statisticsApi = {
   getTrend: (days?: number) =>
     api.get<{ date: string; cash: number; recharge: number }[]>('/statistics/trend', { params: { days } }),
   getStatement: (year: number, month: number) =>
-    api.get<MonthlyStatement>('/statistics/statement', { params: { year, month } }),
+    api.get<{ statement: MonthlyStatement; reconciliation: ReconciliationState }>('/statistics/statement', { params: { year, month } }),
   getStatementCsvUrl: (year: number, month: number) =>
     `/api/statistics/statement/csv?year=${year}&month=${month}`,
+  getReconciliation: (year: number, month: number) =>
+    api.get<ReconciliationState>('/statistics/reconciliation', { params: { year, month } }),
+  saveReconciliation: (data: Partial<ReconciliationState> & { month: string }) =>
+    api.post<ReconciliationState>('/statistics/reconciliation', data),
+  getMemberLedger: (memberId: string) =>
+    api.get<LedgerRecord[]>(`/statistics/ledger/${memberId}`),
 };
 
 export const configApi = {

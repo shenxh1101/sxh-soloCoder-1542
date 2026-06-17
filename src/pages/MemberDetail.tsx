@@ -16,10 +16,12 @@ import {
   Clock3,
   X,
   Receipt,
+  BookOpen,
+  ChevronRight,
 } from 'lucide-react';
-import { memberApi } from '../api/client.js';
+import { memberApi, statisticsApi } from '../api/client.js';
 import { formatCurrency, formatDate, formatDateTime, formatPhone, getAge } from '../utils/format.js';
-import type { ConsumeRecord, RechargeRecord, PointsExchange, Coupon } from '../../shared/types/index.js';
+import type { ConsumeRecord, RechargeRecord, PointsExchange, Coupon, LedgerRecord } from '../../shared/types/index.js';
 
 export default function MemberDetail() {
   const { id } = useParams<{ id: string }>();
@@ -31,14 +33,30 @@ export default function MemberDetail() {
     pointsRecords: PointsExchange[];
     coupons: Coupon[];
   } | null>(null);
-  const [activeTab, setActiveTab] = useState<'consume' | 'recharge' | 'points' | 'coupons'>('consume');
+  const [activeTab, setActiveTab] = useState<'consume' | 'recharge' | 'points' | 'coupons' | 'ledger'>('consume');
   const [selectedRecord, setSelectedRecord] = useState<ConsumeRecord | null>(null);
+  const [ledgerRecords, setLedgerRecords] = useState<LedgerRecord[]>([]);
+  const [ledgerLoading, setLedgerLoading] = useState(false);
+  const [selectedLedger, setSelectedLedger] = useState<LedgerRecord | null>(null);
 
   useEffect(() => {
     if (id) {
       loadMemberData(id);
+      loadLedger(id);
     }
   }, [id]);
+
+  const loadLedger = async (memberId: string) => {
+    setLedgerLoading(true);
+    try {
+      const res = await statisticsApi.getMemberLedger(memberId);
+      setLedgerRecords(res.data);
+    } catch (err) {
+      console.error('Failed to load ledger:', err);
+    } finally {
+      setLedgerLoading(false);
+    }
+  };
 
   const loadMemberData = async (memberId: string) => {
     setLoading(true);
@@ -77,6 +95,7 @@ export default function MemberDetail() {
   const totalBonus = rechargeRecords.reduce((sum, r) => sum + r.bonusAmount, 0);
 
   const tabs = [
+    { key: 'ledger', label: '会员账本', count: ledgerRecords.length, icon: BookOpen },
     { key: 'consume', label: '消费记录', count: consumeRecords.length, icon: CreditCard },
     { key: 'recharge', label: '充值记录', count: rechargeRecords.length, icon: TrendingUp },
     { key: 'points', label: '积分记录', count: pointsRecords.length, icon: History },
@@ -209,6 +228,71 @@ export default function MemberDetail() {
         </div>
 
         <div className="p-6">
+          {activeTab === 'ledger' && (
+            <div className="space-y-2">
+              {ledgerLoading ? (
+                <div className="text-center py-12 text-primary-400">
+                  <div className="animate-spin w-6 h-6 border-4 border-primary-200 border-t-primary-600 rounded-full mx-auto mb-2" />
+                  <p>加载中...</p>
+                </div>
+              ) : ledgerRecords.length > 0 ? (
+                ledgerRecords.map((record) => {
+                  const typeConfig: Record<string, { bg: string; color: string; label: string; icon: any }> = {
+                    consume: { bg: 'bg-blue-100', color: 'text-blue-600', label: '消费', icon: CreditCard },
+                    recharge: { bg: 'bg-green-100', color: 'text-green-600', label: '充值', icon: TrendingUp },
+                    coupon_use: { bg: 'bg-accent-100', color: 'text-accent-600', label: '用券', icon: Ticket },
+                    points_exchange: { bg: 'bg-purple-100', color: 'text-purple-600', label: '积分兑换', icon: Gift },
+                  };
+                  const cfg = typeConfig[record.type] || typeConfig.consume;
+                  const Icon = cfg.icon;
+                  return (
+                    <button
+                      key={record.id}
+                      onClick={() => setSelectedLedger(record)}
+                      className="w-full text-left flex items-center justify-between p-3 hover:bg-primary-50 rounded-xl transition-colors group"
+                    >
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className={`w-10 h-10 rounded-lg ${cfg.bg} flex items-center justify-center ${cfg.color} shrink-0`}>
+                          <Icon size={18} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-primary-800 truncate">{record.title}</p>
+                            <span className={`shrink-0 px-2 py-0.5 rounded-full text-xs ${cfg.bg} ${cfg.color}`}>
+                              {cfg.label}
+                            </span>
+                          </div>
+                          <p className="text-sm text-primary-500 truncate">{record.description}</p>
+                          <p className="text-xs text-primary-400">{formatDateTime(record.createdAt)}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <div className="text-right">
+                          {record.balanceChange !== 0 && (
+                            <p className={`text-sm font-semibold ${record.balanceChange > 0 ? 'text-green-600' : 'text-primary-700'}`}>
+                              {record.balanceChange > 0 ? '+' : ''}{formatCurrency(record.balanceChange)}
+                            </p>
+                          )}
+                          {record.pointsChange !== 0 && (
+                            <p className={`text-xs ${record.pointsChange > 0 ? 'text-accent-600' : 'text-purple-600'}`}>
+                              {record.pointsChange > 0 ? '+' : ''}{record.pointsChange} 分
+                            </p>
+                          )}
+                        </div>
+                        <ChevronRight size={16} className="text-primary-300 group-hover:text-primary-500 transition-colors" />
+                      </div>
+                    </button>
+                  );
+                })
+              ) : (
+                <div className="text-center py-12 text-primary-400">
+                  <BookOpen size={40} className="mx-auto mb-2 opacity-50" />
+                  <p>暂无账本记录</p>
+                </div>
+              )}
+            </div>
+          )}
+
           {activeTab === 'consume' && (
             <div className="space-y-3">
               {consumeRecords.length > 0 ? (
@@ -516,14 +600,19 @@ export default function MemberDetail() {
                   </div>
 
                   {selectedRecord.couponDiscount > 0 && (
-                    <div className="flex justify-between text-sm">
+                    <div className="flex justify-between text-sm items-start">
                       <span className="text-accent-600 flex items-center gap-1">
                         <Ticket size={14} />
                         优惠券抵扣
                       </span>
-                      <span className="text-accent-600 font-medium">
-                        - {formatCurrency(selectedRecord.couponDiscount)}
-                      </span>
+                      <div className="text-right">
+                        <span className="text-accent-600 font-medium">
+                          - {formatCurrency(selectedRecord.couponDiscount)}
+                        </span>
+                        {selectedRecord.couponName && (
+                          <p className="text-xs text-accent-500 mt-0.5">（{selectedRecord.couponName}）</p>
+                        )}
+                      </div>
                     </div>
                   )}
 
@@ -539,27 +628,14 @@ export default function MemberDetail() {
                     </div>
                   )}
 
-                  {(selectedRecord.couponDiscount > 0 || selectedRecord.pointsDiscount > 0) && (
-                    <div className="border-t border-primary-100 pt-2 mt-2">
-                      <div className="flex justify-between">
-                        <span className="font-medium text-primary-700">实付金额</span>
-                        <span className="font-bold text-primary-800 text-lg">
-                          {formatCurrency(selectedRecord.amount)}
-                        </span>
-                      </div>
+                  <div className="border-t border-primary-100 pt-2 mt-2">
+                    <div className="flex justify-between">
+                      <span className="font-medium text-primary-700">实付金额</span>
+                      <span className="font-bold text-primary-800 text-lg">
+                        {formatCurrency(selectedRecord.amount)}
+                      </span>
                     </div>
-                  )}
-
-                  {selectedRecord.couponDiscount === 0 && selectedRecord.pointsDiscount === 0 && (
-                    <div className="border-t border-primary-100 pt-2 mt-2">
-                      <div className="flex justify-between">
-                        <span className="font-medium text-primary-700">实付金额</span>
-                        <span className="font-bold text-primary-800 text-lg">
-                          {formatCurrency(selectedRecord.amount)}
-                        </span>
-                      </div>
-                    </div>
-                  )}
+                  </div>
                 </div>
 
                 <div className="p-3 bg-accent-50 rounded-xl space-y-2">
@@ -577,8 +653,164 @@ export default function MemberDetail() {
                   </div>
                 </div>
 
+                <div className="p-3 bg-blue-50 rounded-xl space-y-2">
+                  <p className="text-xs font-medium text-blue-700 mb-1">余额变化</p>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-blue-600">扣前余额</span>
+                    <span className="font-medium text-blue-800">
+                      {formatCurrency(selectedRecord.balanceBefore ?? 0)}
+                    </span>
+                  </div>
+                  {selectedRecord.payMethod === 'balance' && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-blue-600">本次扣除</span>
+                      <span className="font-medium text-red-600">
+                        - {formatCurrency(selectedRecord.amount)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-sm">
+                    <span className="text-blue-600">扣后余额</span>
+                    <span className="font-semibold text-blue-800">
+                      {formatCurrency(selectedRecord.balanceAfter ?? 0)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-purple-50 rounded-xl space-y-2">
+                  <p className="text-xs font-medium text-purple-700 mb-1">积分变化</p>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-purple-600">扣前积分</span>
+                    <span className="font-medium text-purple-800">
+                      {selectedRecord.pointsBefore ?? 0} 分
+                    </span>
+                  </div>
+                  {selectedRecord.pointsUsed > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-purple-600">本次消耗</span>
+                      <span className="font-medium text-red-600">
+                        - {selectedRecord.pointsUsed} 分
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-sm">
+                    <span className="text-purple-600">本次获得</span>
+                    <span className="font-medium text-accent-600">
+                      + {selectedRecord.pointsEarned} 分
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-purple-600">扣后积分</span>
+                    <span className="font-semibold text-purple-800">
+                      {selectedRecord.pointsAfter ?? 0} 分
+                    </span>
+                  </div>
+                </div>
+
                 <div className="text-center text-xs text-primary-400 pt-2 border-t border-dashed border-primary-200">
                   凭此小票可享受售后服务 · 谢谢光临
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {selectedLedger && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          onClick={() => setSelectedLedger(null)}
+        >
+          <div
+            className="bg-white rounded-2xl max-w-sm w-full max-h-[90vh] overflow-y-auto animate-fadeIn"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-100 to-primary-600 flex items-center justify-center">
+                    <BookOpen size={20} className="text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-serif text-lg font-semibold text-primary-800">{selectedLedger.title}</h3>
+                    <p className="text-xs text-primary-500">
+                      {formatDateTime(selectedLedger.createdAt)}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedLedger(null)}
+                  className="w-8 h-8 rounded-full hover:bg-primary-100 flex items-center justify-center text-primary-500"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                <div className="p-4 bg-primary-50 rounded-xl">
+                  <p className="text-xs text-primary-500 mb-1">操作描述</p>
+                  <p className="text-sm text-primary-800">{selectedLedger.description}</p>
+                  {selectedLedger.payMethod && (
+                    <p className="text-xs text-primary-500 mt-2">
+                      支付方式: {selectedLedger.payMethod}
+                    </p>
+                  )}
+                </div>
+
+                {(selectedLedger.balanceBefore !== undefined || selectedLedger.balanceChange !== 0) && (
+                  <div className="p-3 bg-blue-50 rounded-xl space-y-2">
+                    <p className="text-xs font-medium text-blue-700 mb-1">余额变化</p>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-blue-600">操作前</span>
+                      <span className="font-medium text-blue-800">
+                        {formatCurrency(selectedLedger.balanceBefore)}
+                      </span>
+                    </div>
+                    {selectedLedger.balanceChange !== 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-blue-600">本次变化</span>
+                        <span className={`font-medium ${selectedLedger.balanceChange > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {selectedLedger.balanceChange > 0 ? '+' : ''}{formatCurrency(selectedLedger.balanceChange)}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-sm">
+                      <span className="text-blue-600">操作后</span>
+                      <span className="font-semibold text-blue-800">
+                        {formatCurrency(selectedLedger.balanceAfter)}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {(selectedLedger.pointsBefore !== undefined || selectedLedger.pointsChange !== 0) && (
+                  <div className="p-3 bg-purple-50 rounded-xl space-y-2">
+                    <p className="text-xs font-medium text-purple-700 mb-1">积分变化</p>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-purple-600">操作前</span>
+                      <span className="font-medium text-purple-800">
+                        {selectedLedger.pointsBefore} 分
+                      </span>
+                    </div>
+                    {selectedLedger.pointsChange !== 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-purple-600">本次变化</span>
+                        <span className={`font-medium ${selectedLedger.pointsChange > 0 ? 'text-accent-600' : 'text-red-600'}`}>
+                          {selectedLedger.pointsChange > 0 ? '+' : ''}{selectedLedger.pointsChange} 分
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-sm">
+                      <span className="text-purple-600">操作后</span>
+                      <span className="font-semibold text-purple-800">
+                        {selectedLedger.pointsAfter} 分
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="text-center text-xs text-primary-400 pt-2 border-t border-dashed border-primary-200">
+                  记录编号: {selectedLedger.rawRecordId}
                 </div>
               </div>
             </div>

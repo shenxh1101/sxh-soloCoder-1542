@@ -6,10 +6,17 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const DATA_DIR = path.join(__dirname, '..', 'data');
 
-export function readJSONFile<T>(filename: string): T {
+export function readJSONFile<T>(filename: string, defaultValue?: T): T {
   const filePath = path.join(DATA_DIR, filename);
-  const content = fs.readFileSync(filePath, 'utf-8');
-  return JSON.parse(content);
+  try {
+    const content = fs.readFileSync(filePath, 'utf-8');
+    return JSON.parse(content);
+  } catch (e) {
+    if (defaultValue !== undefined) {
+      return defaultValue;
+    }
+    throw e;
+  }
 }
 
 export function writeJSONFile<T>(filename: string, data: T): void {

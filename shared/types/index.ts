@@ -12,33 +12,52 @@ export interface Member {
 export interface ConsumeRecord {
   id: string;
   memberId: string;
+  memberName?: string;
+  memberPhone?: string;
   serviceName: string;
   amount: number;
   originalAmount: number;
   couponDiscount: number;
   couponId: string | null;
+  couponName?: string;
   pointsUsed: number;
   pointsDiscount: number;
   payMethod: 'balance' | 'cash';
   pointsEarned: number;
+  balanceBefore: number;
+  balanceAfter: number;
+  pointsBefore: number;
+  pointsAfter: number;
   createdAt: string;
 }
 
 export interface RechargeRecord {
   id: string;
   memberId: string;
+  memberName?: string;
+  memberPhone?: string;
   rechargeAmount: number;
   bonusAmount: number;
+  balanceBefore: number;
+  balanceAfter: number;
+  pointsBefore: number;
+  pointsAfter: number;
   createdAt: string;
 }
 
 export interface PointsExchange {
   id: string;
   memberId: string;
+  memberName?: string;
+  memberPhone?: string;
   pointsUsed: number;
   exchangeType: 'cash' | 'product';
   cashValue: number;
   productName: string;
+  balanceBefore: number;
+  balanceAfter: number;
+  pointsBefore: number;
+  pointsAfter: number;
   createdAt: string;
 }
 
@@ -141,6 +160,42 @@ export interface MonthlyStatement {
   totalConsumeAmount: number;
   originalConsumeAmount: number;
   marketing: MarketingStatistics;
+}
+
+export interface ReconciliationState {
+  month: string;
+  actualCashAmount: number;
+  actualRechargeAmount: number;
+  notes: string;
+  reconciled: boolean;
+  reconciledAt: string | null;
+  reconciledBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type LedgerRecordType = 'consume' | 'recharge' | 'points_exchange' | 'coupon_use';
+
+export interface LedgerRecord {
+  id: string;
+  type: LedgerRecordType;
+  memberId: string;
+  memberName: string;
+  memberPhone: string;
+  title: string;
+  description: string;
+  amount: number;
+  balanceChange: number;
+  pointsChange: number;
+  balanceBefore: number;
+  balanceAfter: number;
+  pointsBefore: number;
+  pointsAfter: number;
+  couponName?: string;
+  serviceName?: string;
+  payMethod?: string;
+  rawRecordId: string;
+  createdAt: string;
 }
 
 export interface StatisticsData {

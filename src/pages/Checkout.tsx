@@ -493,19 +493,13 @@ export default function Checkout() {
                     结算预览
                   </h4>
                   <div className="space-y-2 text-sm">
-                    {payMethod === 'balance' && (
-                      <div className="flex justify-between">
-                        <span className="text-primary-600">扣余额</span>
-                        <span className="font-medium text-primary-800">
-                          - {formatCurrency(actualAmount)}
-                        </span>
-                      </div>
-                    )}
                     {selectedCoupon && (
-                      <div className="flex justify-between">
+                      <div className="flex justify-between items-start">
                         <span className="text-accent-600">用优惠券</span>
-                        <span className="font-medium text-accent-600">
-                          {selectedCoupon.name} · -{formatCurrency(selectedCoupon.amount)}
+                        <span className="font-medium text-accent-600 text-right">
+                          {selectedCoupon.name}
+                          <br />
+                          <span className="text-accent-700">- {formatCurrency(selectedCoupon.amount)}</span>
                         </span>
                       </div>
                     )}
@@ -525,20 +519,73 @@ export default function Checkout() {
                         </span>
                       </div>
                     )}
-                    <div className="border-t border-primary-200 pt-2 mt-2 space-y-2">
-                      {payMethod === 'balance' && (
+
+                    <div className="border-t border-primary-200 pt-2 mt-2">
+                      <p className="text-xs font-medium text-blue-700 mb-2">余额变化</p>
+                      <div className="space-y-1">
                         <div className="flex justify-between">
-                          <span className="text-primary-500">结后余额</span>
-                          <span className="font-bold text-primary-800">
-                            {formatCurrency(selectedMember.balance - actualAmount)}
+                          <span className="text-blue-600">扣前余额</span>
+                          <span className="font-medium text-blue-800">
+                            {formatCurrency(selectedMember.balance)}
                           </span>
                         </div>
-                      )}
-                      <div className="flex justify-between">
-                        <span className="text-primary-500">结后积分</span>
-                        <span className="font-bold text-primary-800">
-                          {selectedMember.points - pointsToUse + estimatedPoints} 分
-                        </span>
+                        {payMethod === 'balance' ? (
+                          <>
+                            <div className="flex justify-between">
+                              <span className="text-blue-600">本次扣除</span>
+                              <span className="font-medium text-red-600">
+                                - {formatCurrency(actualAmount)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between pt-1 border-t border-blue-100">
+                              <span className="text-blue-700 font-medium">结后余额</span>
+                              <span className="font-bold text-blue-800">
+                                {formatCurrency(selectedMember.balance - actualAmount)}
+                              </span>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="flex justify-between pt-1 border-t border-blue-100">
+                            <span className="text-blue-600">本次不扣（现金）</span>
+                            <span className="font-bold text-blue-800">
+                              {formatCurrency(selectedMember.balance)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="border-t border-primary-200 pt-2 mt-2">
+                      <p className="text-xs font-medium text-purple-700 mb-2">积分变化</p>
+                      <div className="space-y-1">
+                        <div className="flex justify-between">
+                          <span className="text-purple-600">扣前积分</span>
+                          <span className="font-medium text-purple-800">
+                            {selectedMember.points} 分
+                          </span>
+                        </div>
+                        {pointsToUse > 0 && (
+                          <div className="flex justify-between">
+                            <span className="text-purple-600">消耗积分</span>
+                            <span className="font-medium text-red-600">
+                              - {pointsToUse} 分
+                            </span>
+                          </div>
+                        )}
+                        {estimatedPoints > 0 && (
+                          <div className="flex justify-between">
+                            <span className="text-purple-600">获得积分</span>
+                            <span className="font-medium text-accent-600">
+                              + {estimatedPoints} 分
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex justify-between pt-1 border-t border-purple-100">
+                          <span className="text-purple-700 font-medium">结后积分</span>
+                          <span className="font-bold text-purple-800">
+                            {selectedMember.points - pointsToUse + estimatedPoints} 分
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </div>

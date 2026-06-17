@@ -26,12 +26,22 @@ export function createRecharge(
   const bonusAmount = calculateBonusAmount(data.rechargeAmount, rules);
   const totalAmount = data.rechargeAmount + bonusAmount;
 
+  const balanceBefore = member.balance;
+  const pointsBefore = member.points;
+  const newBalance = balanceBefore + totalAmount;
+
   const newRecord: RechargeRecord = {
     id: generateId('r'),
     memberId: data.memberId,
+    memberName: member.name,
+    memberPhone: member.phone,
     rechargeAmount: data.rechargeAmount,
     bonusAmount,
-    createdAt: formatDate(new Date()),
+    balanceBefore,
+    balanceAfter: newBalance,
+    pointsBefore,
+    pointsAfter: pointsBefore,
+    createdAt: new Date().toISOString(),
   };
 
   const records = getRechargeRecords();
@@ -39,7 +49,7 @@ export function createRecharge(
   writeJSONFile('rechargeRecords.json', records);
 
   updateMember(member.id, {
-    balance: member.balance + totalAmount,
+    balance: newBalance,
   });
 
   return newRecord;
